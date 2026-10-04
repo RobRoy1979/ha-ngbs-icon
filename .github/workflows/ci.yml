@@ -46,18 +46,6 @@ jobs:
           cache-dependency-path: requirements_dev.txt
       - run: pip install -r requirements_dev.txt
       - run: mypy
-      - name: Diagnose snapshot lookup (temporary)
-        run: |
-          pwd; ls -la tests/snapshots | head; git ls-files tests/snapshots | wc -l
-          head -c 200 tests/snapshots/test_lock.ambr | od -c | head -6
-          pip show syrupy pytest | grep -E "^(Name|Version)"
-          pytest tests/test_lock.py -p tests.conftest_debug -s -q -p no:cacheprovider 2>&1 | grep -E 'DEBUGSNAP|passed|failed' | head -20 || true
-          python - <<'PY'
-          from pytest_homeassistant_custom_component.syrupy import HomeAssistantSnapshotExtension as E
-          col = E().read_snapshot_collection("tests/snapshots/test_lock.ambr")
-          print("HA ext parsed:", len(list(col)), "tainted:", col.tainted, [(s.name, s.tainted) for s in list(col)[:2]])
-          print("serializer VERSION:", E.serializer_class.VERSION, "ext VERSION:", E.VERSION)
-          PY
       - run: pytest --cov --cov-report=xml --cov-report=term-missing
       - uses: codecov/codecov-action@v5
         if: always()

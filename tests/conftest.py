@@ -17,6 +17,8 @@ from homeassistant.const import CONF_HOST, CONF_MAC, CONF_SCAN_INTERVAL, Platfor
 from homeassistant.core import HomeAssistant
 import pytest
 from pytest_homeassistant_custom_component.common import MockConfigEntry
+from pytest_homeassistant_custom_component.syrupy import HomeAssistantSnapshotExtension
+from syrupy.assertion import SnapshotAssertion
 
 from custom_components.ngbs_icon.const import CONF_SYSID, DOMAIN
 import pyngbsicon
@@ -68,6 +70,16 @@ def add_slave(raw: dict[str, Any]) -> None:
 @pytest.fixture(autouse=True)
 def auto_enable_custom_integrations(enable_custom_integrations: None) -> None:
     """Load the integration from custom_components."""
+
+
+@pytest.fixture
+def snapshot(snapshot: SnapshotAssertion) -> SnapshotAssertion:
+    """Use the Home Assistant snapshot serializer and the ``snapshots`` directory.
+
+    Which plugin's ``snapshot`` fixture wins (syrupy's own or the Home Assistant test
+    harness's) depends on the plugin load order, which differs between machines.
+    """
+    return snapshot.use_extension(HomeAssistantSnapshotExtension)
 
 
 @pytest.fixture
