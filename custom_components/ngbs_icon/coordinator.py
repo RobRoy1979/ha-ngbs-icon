@@ -23,6 +23,9 @@ from .const import DEFAULT_SCAN_INTERVAL, DOMAIN, LOGGER
 
 _SETPOINT_FIELDS = frozenset(kind.field for kind in pyngbsicon.SetpointKind)
 
+STARTING_GRACE = timedelta(seconds=60)
+RETRY_SOON = timedelta(seconds=10)
+
 type IconConfigEntry = ConfigEntry[IconCoordinator]
 type IconWrite = Callable[[pyngbsicon.IconClient], Awaitable[pyngbsicon.IconSystem]]
 
@@ -53,21 +56,37 @@ class IconCoordinator(DataUpdateCoordinator[pyngbsicon.IconSystem]):
         client: pyngbsicon.IconClient,
     ) -> None:
         """Create the coordinator for one config entry."""
+        interval = timedelta(
+            seconds=entry.options.get(CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL)
+        )
         super().__init__(
             hass,
             LOGGER,
             config_entry=entry,
             name=DOMAIN,
-            update_interval=timedelta(
-                seconds=entry.options.get(CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL)
-            ),
+            update_interval=interval,
             always_update=False,
         )
+        self._interval = interval
+        self._failure_tolerated = False
         self.client = client
         self.statistics = PollStatistics()
         self.offline_since: dict[str, datetime] = {}
         """Configured thermostats that do not communicate, and since when."""
         self._poll_listeners: list[Callable[[pyngbsicon.IconSystem], None]] = []
+        self.firmware: dict[int, int] = {}
+        """Firmware version by controller address (slaves report it only here)."""
+        self._starting_since: datetime | None = None
+
+    async def async_read_firmware(self) -> None:
+        """Read the firmware versions of all controllers (SYSID discovery answer)."""
+        try:
+            info = await self.client.discover_sysid()
+        except pyngbsicon.IconError as err:
+            # Firmware older than 1079 does not answer; the versions are cosmetic.
+            LOGGER.debug("Could not read the controllers' firmware versions: %s", err)
+            return
+        self.firmware = dict(info.firmware)
 
     async def _async_update_data(self) -> pyngbsicon.IconSystem:
         self.statistics.polls += 1
@@ -81,16 +100,56 @@ class IconCoordinator(DataUpdateCoordinator[pyngbsicon.IconSystem]):
                 raise ConfigEntryAuthFailed(
                     translation_domain=DOMAIN, translation_key="auth_failed"
                 ) from err
+            if self._tolerate_failure(err):
+                return self.data
+            self.update_interval = self._interval
             raise UpdateFailed(
                 translation_domain=DOMAIN,
                 translation_key="update_failed",
                 translation_placeholders={"error": str(err)},
             ) from err
         self.statistics.last_duration_ms = round((time.monotonic() - start) * 1000)
+        self._failure_tolerated = False
+        self.update_interval = self._interval
+        if self._keep_previous(state):
+            return self.data
         self._track_offline(state)
         for listener in self._poll_listeners:
             listener(state)
         return state
+
+    def _tolerate_failure(self, err: pyngbsicon.IconError) -> bool:
+        """Ride out a single failed poll after a successful one.
+
+        A controller that misses one request (observed: a few seconds without
+        accepting connections) should not make every entity unavailable and log an
+        error. The previous state stays; the next attempt comes sooner.
+        """
+        if self._failure_tolerated or self.data is None or not self.last_update_success:
+            return False
+        self._failure_tolerated = True
+        self.update_interval = min(self._interval, RETRY_SOON)
+        LOGGER.debug("Poll failed once, keeping the previous state: %s", err)
+        return True
+
+    def _keep_previous(self, state: pyngbsicon.IconSystem) -> bool:
+        """Skip the answers of a controller whose software is starting.
+
+        They hold placeholder values (for a moment the heating mode) that would
+        show up in the history and could trigger automations. The previous state is
+        kept for at most a minute, so a firmware that never reports the task list
+        is not frozen.
+        """
+        if not state.starting or self.data is None:
+            self._starting_since = None
+            return False
+        now = dt_util.utcnow()
+        if self._starting_since is None:
+            self._starting_since = now
+        if now - self._starting_since > STARTING_GRACE:
+            return False
+        LOGGER.debug("The controller is starting; keeping the previous state")
+        return True
 
     @callback
     def async_add_poll_listener(

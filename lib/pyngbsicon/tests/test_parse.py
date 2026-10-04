@@ -303,3 +303,22 @@ def test_signal_ref_properties() -> None:
     assert str(ref) == "B2.4" and ref.thermostat_id == "2.4"
     assert SignalRef(SignalFunction.INPUT, 1, 5).thermostat_id is None
     assert SignalRef(SignalFunction.RELAY, 1, 2).thermostat_id is None
+
+
+def test_starting_controller() -> None:
+    """Right after a software restart the task list is missing and values are placeholders."""
+    raw = load("state_full")
+    raw["INFO"] = {"FIRMWARE": 1079}
+    raw["WTEMP"] = 0
+    raw["CFG"]["ICON1"]["STATUS"]["WTEMP"] = 0
+    state = parse_state(raw)
+    assert state.starting
+    assert state.water_temp is None
+    assert state.controllers[1].water_temp is None
+
+
+def test_not_starting() -> None:
+    assert not parse_state(load("state_full")).starting
+    raw = load("state_full")
+    del raw["INFO"]  # no information at all: not a sign of starting
+    assert not parse_state(raw).starting

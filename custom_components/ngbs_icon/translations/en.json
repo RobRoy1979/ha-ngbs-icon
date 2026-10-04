@@ -7,7 +7,7 @@
     "step": {
       "select": {
         "title": "Choose a controller",
-        "description": "Several iCON controllers were found on your network.",
+        "description": "Several iCON controllers were found on your network. Each shows its address, the end of its system ID and its firmware version; \"SYSID ?\" means the firmware is too old to reveal the system ID, which you will be asked for.",
         "data": {
           "host": "Controller"
         },

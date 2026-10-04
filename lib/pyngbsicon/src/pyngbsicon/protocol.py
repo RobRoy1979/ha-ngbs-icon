@@ -153,7 +153,7 @@ def parse_state(
         hc_mode=_hc(answer.get("HC")),
         eco=_flag(answer.get("CE")),
         regulation_on=_flag(answer.get("ON")),
-        water_temp=_temperature(answer.get("WTEMP")),
+        water_temp=_water_temperature(answer.get("WTEMP")),
         outdoor_temp=_temperature(answer.get("ETEMP")),
         pump=_flag(answer.get("PUMP")),
         fault=_flag(answer.get("ERR")),
@@ -174,6 +174,9 @@ def parse_state(
         controllers=controllers,
         thermostats=thermostats,
         has_config=cfg is not None,
+        # While the software starts, INFO has no task list yet and some values are
+        # placeholders (observed: heating mode for a moment, water temperature 0).
+        starting=bool(info) and "TASK" not in info,
         raw=redact(answer),
     )
 
@@ -254,7 +257,7 @@ def _parse_controller(
         address=address,
         is_master=is_master,
         firmware=firmware,
-        water_temp=_temperature(status.get("WTEMP")),
+        water_temp=_water_temperature(status.get("WTEMP")),
         outdoor_temp=_temperature(status.get("ETEMP")),
         mixing_valve=_num(status.get("AO")),
         supply_voltage=_num(status.get("POWER")),
@@ -340,6 +343,16 @@ def _flag(value: Any) -> bool:
 def _temperature(value: Any) -> float | None:
     number = _num(value)
     return None if number is None or number == SENSOR_FAULT else number
+
+
+def _water_temperature(value: Any) -> float | None:
+    """Supply water temperature; 0 means not measured yet (after a restart).
+
+    Water in an operating heating/cooling circuit cannot be at 0 °C, while the
+    controller reports exactly 0 for several seconds after its software starts.
+    """
+    temperature = _temperature(value)
+    return None if temperature == 0 else temperature
 
 
 def _hc(value: Any) -> HeatCool:

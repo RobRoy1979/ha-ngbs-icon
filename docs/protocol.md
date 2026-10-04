@@ -83,10 +83,10 @@ Home Assistant matches these in its DHCP discovery (`manifest.json` → `dhcp`).
 | `{"SYSID": s}` | full state without configuration | regular polling |
 | `{"SYSID": s, "RELOAD": ""}` (or `"RELOAD": 3`) | full state **plus** `KEY`, `CFG`, `EVENTLOG` | names, relay matrix, H/C master, Modbus settings |
 | `{"SYSID": s, "DP": {"1.3": {"XAH": 21.5}}}` | state without configuration | write thermostat fields; several thermostats and fields may be combined in one request. See 3.5 for when the value really takes effect. |
-| `{"SYSID": s, "CE": 1}` | state | system-wide ECO on/off (*unconfirmed*: not yet tested whether the controller applies it or, like the default setpoints, ignores it) |
-| `{"SYSID": s, "HC": 1}` | state | system-wide heating (0) / cooling (1). The answer already shows the new mode, but the controller switches its relays with a delay (3–10 minutes by default). Without effect when switching is done by an external contact. |
+| `{"SYSID": s, "CE": 1}` | state | system-wide ECO on/off. Verified: the controller applies it and the thermostats follow according to their follow settings (`CEF` into ECO, `CEC` back to comfort); the write settles in about 2.3 s like a thermostat write. |
+| `{"SYSID": s, "HC": 1}` | state | system-wide heating (0) / cooling (1). Verified on a system whose H/C master is a thermostat: the answer shows the new mode and the thermostats follow at once; the old changeover relay dropped immediately and the new one picked up within 20 s (the relay delays are configurable, so other systems may be slower). Expected to have no effect when switching is done by an external contact. |
 | `{"SYSID": s, "SW": 1}` | state | switched output ("TAP"), if a relay is configured for it (*unconfirmed*) |
-| `{"SYSID": s, "RELOAD": 8}` | — | restart the controller software |
+| `{"SYSID": s, "RELOAD": 8}` | — | restart the controller software (not the operating system). Observed: no connection for about 8 s; settings are kept; `INFO.UPTIME` is not reset. See the start-up quirks below. |
 | `{"SYSID": s, "RELOAD": 7}` | — | start a firmware update from the network (not used) |
 
 Writable thermostat fields (verified): `XAH`, `XAC`, `ECOH`, `ECOC` (the four
@@ -125,7 +125,7 @@ writable**: the controller answers normally but ignores them.
 | `EMAIL` | notification address |
 | `TZ` | IANA time zone |
 | `INFO.FIRMWARE` | firmware version, e.g. 1079 |
-| `INFO.UPTIME` | hours since start (whole hours; observed: unchanged within minutes, +3 over 3.3 hours) |
+| `INFO.UPTIME` | hours since the operating system started (whole hours; observed: unchanged within minutes, +3 over 3.3 hours, not reset by `RELOAD 8`) |
 | `INFO.TASK` | running tasks, e.g. `["reg", "wdr"]` |
 | `INFO.NETL` | `MAC`, interface addresses (`eth0`, `eth0:1`, `tun0`; `tun0` present = cloud tunnel up) |
 
@@ -190,9 +190,17 @@ relay matrix, so always read the role from `FUNC`.
 * The `"VER:"` key in the discovery answer has a trailing colon.
 * Some older firmware versions emit numbers such as `0000`, which is invalid JSON; a
   parser should normalise them before decoding.
-* After a heating/cooling switch the relays change minutes later; valve outputs
-  (`OUT`) follow setpoint changes only when the room temperature crosses the
-  hysteresis.
+* After a heating/cooling switch the changeover relays follow after their
+  configured delay; valve outputs (`OUT`) follow setpoint changes only when the room
+  temperature crosses the hysteresis.
+* While the software starts (after `RELOAD 8`), the answers hold placeholders for a
+  few seconds: `INFO` has no `TASK` (and sometimes no `UPTIME`, or a stale one),
+  `HC` showed heating for a moment on a cooling system, and `WTEMP` was `0` for about
+  six seconds. A client should skip answers without `INFO.TASK` and treat a supply
+  water temperature of exactly `0` as not measured.
+* The controller occasionally does not accept connections for a few seconds
+  (observed once during a day of polling); a single failed request is not a sign
+  that the controller is gone.
 * Changed settings are written to EEPROM 3–5 minutes after the last change. A
   configuration change made in the meantime (which reloads the configuration) can
   bring back the previously stored values.

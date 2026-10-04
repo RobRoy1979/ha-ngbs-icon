@@ -337,6 +337,9 @@ class IconSystem:
     """Every thermostat slot, configured or not; see :attr:`configured_thermostats`."""
     has_config: bool
     """The configuration (names, relays, masters) was read."""
+    starting: bool = False
+    """The controller software is starting; the answer may hold placeholder values
+    (for a moment the heating mode, for some seconds a water temperature of 0)."""
     raw: Mapping[str, Any] = field(default_factory=dict, compare=False, repr=False)
 
     @property

@@ -100,8 +100,8 @@ async def test_several_controllers_found(
         "192.0.2.30",
         "manual",
     ]
-    assert options[1]["label"] == f"{HOST} — SYSID …9012, firmware 1079"
-    assert options[2]["label"] == "192.0.2.30 (SYSID required)"
+    assert options[1]["label"] == f"{HOST} · SYSID …9012 · v1079"
+    assert options[2]["label"] == "192.0.2.30 · SYSID ?"
 
     result = await hass.config_entries.flow.async_configure(
         result["flow_id"], {CONF_HOST: HOST}

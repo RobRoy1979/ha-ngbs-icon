@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import dataclasses
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 
 from homeassistant.config_entries import SOURCE_REAUTH, ConfigEntryState
 from homeassistant.const import CONF_HOST, CONF_IP_ADDRESS, CONF_MAC, CONF_SCAN_INTERVAL
@@ -394,3 +394,69 @@ async def test_remove_device_manually(
     assert not await module.async_remove_config_entry_device(
         hass, config_entry, current
     )
+
+
+async def test_slave_firmware_from_discovery(
+    hass: HomeAssistant,
+    config_entry: MockConfigEntry,
+    mock_client: MagicMock,
+    device_registry: dr.DeviceRegistry,
+) -> None:
+    """Slaves report their firmware only in the SYSID discovery answer."""
+    client = mock_client.return_value
+    client.get_state.return_value = make_state(add_slave)
+    client.discover_sysid.return_value = pyngbsicon.SysidInfo(
+        sysid=SYSID, firmware={1: 1079, 2: 1078}, download=0
+    )
+    await setup_integration(hass, config_entry)
+    slave = device_registry.async_get_device_by_identifier(
+        (DOMAIN, f"{SYSID}-controller-2"), config_entry.entry_id
+    )
+    assert slave is not None and slave.sw_version == "1078"
+
+
+async def test_firmware_unknown_on_old_controllers(
+    hass: HomeAssistant,
+    config_entry: MockConfigEntry,
+    mock_client: MagicMock,
+    device_registry: dr.DeviceRegistry,
+) -> None:
+    client = mock_client.return_value
+    client.get_state.return_value = make_state(add_slave)
+    client.discover_sysid.side_effect = pyngbsicon.IconUnsupportedError("old")
+    await setup_integration(hass, config_entry)
+    assert config_entry.state is ConfigEntryState.LOADED
+    slave = device_registry.async_get_device_by_identifier(
+        (DOMAIN, f"{SYSID}-controller-2"), config_entry.entry_id
+    )
+    assert slave is not None and slave.sw_version is None
+
+
+async def test_renamed_thermostat_reloads(
+    hass: HomeAssistant,
+    config_entry: MockConfigEntry,
+    mock_client: MagicMock,
+    device_registry: dr.DeviceRegistry,
+) -> None:
+    """Device and relay names follow a room renamed in the controller."""
+    await setup_integration(hass, config_entry)
+    renamed = make_state(dp={"1.2": {"NAME": "Pantry"}})
+    mock_client.return_value.get_state.return_value = renamed
+    await config_entry.runtime_data.async_refresh()
+    await hass.async_block_till_done()
+    assert config_entry.state is ConfigEntryState.LOADED
+    device = device_registry.async_get_device_by_identifier(
+        (DOMAIN, f"{SYSID}-1.2"), config_entry.entry_id
+    )
+    assert device is not None and device.name == "Pantry"
+    valve = hass.states.get("binary_sensor.home_valve_2_kitchen")
+    assert valve is not None and valve.name == "Home Valve 2 (Pantry)"
+
+    # A thermostat installed later is not a rename.
+    mock_client.return_value.get_state.return_value = make_state(
+        dp={"1.2": {"NAME": "Pantry"}, "1.6": {"ON": 1, "LIVE": 1}}
+    )
+    with patch.object(hass.config_entries, "async_schedule_reload") as reload:
+        await config_entry.runtime_data.async_refresh()
+        await hass.async_block_till_done()
+    reload.assert_not_called()

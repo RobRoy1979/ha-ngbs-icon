@@ -368,7 +368,11 @@ class NgbsIconOptionsFlow(OptionsFlowWithReload):
 
 
 def _describe(item: pyngbsicon.DiscoveredIcon) -> str:
+    """Label of a found controller, without words (the step description explains it).
+
+    Dynamic select labels cannot be translated.
+    """
     if item.needs_sysid:
-        return f"{item.host} (SYSID required)"
+        return f"{item.host} · SYSID ?"
     sysid = item.sysid or ""
-    return f"{item.host} — SYSID …{sysid[-4:]}, firmware {item.firmware}"
+    return f"{item.host} · SYSID …{sysid[-4:]} · v{item.firmware}"

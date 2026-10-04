@@ -7,7 +7,7 @@
     "step": {
       "select": {
         "title": "Vezérlő kiválasztása",
-        "description": "Több iCON vezérlő is van a hálózaton.",
+        "description": "Több iCON vezérlő is van a hálózaton. Mindegyiknél a cím, a rendszerazonosító vége és a firmware-verzió látszik; a „SYSID ?” azt jelenti, hogy a firmware túl régi ahhoz, hogy elárulja a rendszerazonosítót — ezt majd meg kell adnod.",
         "data": {
           "host": "Vezérlő"
         },
@@ -17,7 +17,7 @@
       },
       "confirm": {
         "title": "{name} hozzáadása",
-        "description": "iCON vezérlő itt: {host}; firmware {firmware}, {thermostats} termosztát.",
+        "description": "iCON vezérlő a(z) {host} címen; firmware: {firmware}, termosztátok: {thermostats}.",
         "data": {
           "sysid": "Rendszerazonosító (SYSID)"
         },
@@ -120,7 +120,7 @@
         "name": "Felhőkapcsolat"
       },
       "output": {
-        "name": "Kimenet aktív"
+        "name": "Igény (kimenet bekapcsolva)"
       },
       "connected": {
         "name": "Kapcsolat"
@@ -138,16 +138,16 @@
         "name": "ECO követi a mestert"
       },
       "heating_relay": {
-        "name": "Fűtés relé"
+        "name": "Fűtési relé"
       },
       "cooling_relay": {
-        "name": "Hűtés relé"
+        "name": "Hűtési relé"
       },
       "pump_relay": {
-        "name": "Szivattyú relé"
+        "name": "Szivattyúrelé"
       },
       "switched_output_relay": {
-        "name": "Kapcsolt kimenet relé"
+        "name": "Kapcsolt kimenet reléje"
       },
       "valve": {
         "name": "Szelep {number}"
@@ -240,7 +240,7 @@
         "name": "Tápfeszültség"
       },
       "thermostat_bus_voltage": {
-        "name": "Termosztát-busz feszültség"
+        "name": "Termosztátbusz-feszültség"
       },
       "dew_point": {
         "name": "Harmatpont"
@@ -273,10 +273,10 @@
       "message": "A vezérlő rendszerazonosítója még nem ismert."
     },
     "update_failed": {
-      "message": "A vezérlő nem olvasható: {error}"
+      "message": "A vezérlő olvasása nem sikerült: {error}"
     },
     "write_failed": {
-      "message": "A beállítás nem módosítható: {error}"
+      "message": "A beállítás módosítása nem sikerült: {error}"
     },
     "value_rejected": {
       "message": "A termosztát nem fogadta el ezt az értéket: {value}; kívül esik a számára megengedett tartományon."

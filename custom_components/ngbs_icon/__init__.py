@@ -83,11 +83,18 @@ async def async_setup_entry(hass: HomeAssistant, entry: IconConfigEntry) -> bool
             entry, data={**entry.data, CONF_MAC: state.mac}
         )
 
+    await coordinator.async_read_firmware()
+    names = _thermostat_names(state)
+
     @callback
     def on_update() -> None:
         # Devices first: a slave controller added later needs one for its entities.
         _register_controllers(hass, entry, coordinator.data)
         _remove_uninstalled_thermostats(hass, entry)
+        if _renamed(names, _thermostat_names(coordinator.data)):
+            # Device names and the room names in relay names are set when the
+            # entities are added; start over so they follow the controller.
+            hass.config_entries.async_schedule_reload(entry.entry_id)
 
     on_update()
     entry.async_on_unload(coordinator.async_add_listener(on_update))
@@ -133,6 +140,18 @@ def _current_identifiers(system: pyngbsicon.IconSystem) -> set[tuple[str, str]]:
     return identifiers
 
 
+def _thermostat_names(system: pyngbsicon.IconSystem) -> dict[str, str]:
+    return {
+        key: thermostat.name
+        for key, thermostat in system.configured_thermostats.items()
+    }
+
+
+def _renamed(before: dict[str, str], after: dict[str, str]) -> bool:
+    """Whether a thermostat that existed before has another name now."""
+    return any(after.get(key, name) != name for key, name in before.items())
+
+
 @callback
 def _remove_uninstalled_thermostats(
     hass: HomeAssistant, entry: IconConfigEntry
@@ -175,7 +194,7 @@ def _register_controllers(
         model=MODEL_CONTROLLER,
         name=state.name or DEFAULT_NAME,
         serial_number=state.sysid,
-        sw_version=str(state.firmware) if state.firmware else None,
+        sw_version=_firmware(state.firmware or entry.runtime_data.firmware.get(master)),
         configuration_url=f"http://{entry.data[CONF_HOST]}/",
     )
     for controller in state.controllers.values():
@@ -189,8 +208,16 @@ def _register_controllers(
             manufacturer=MANUFACTURER,
             model=MODEL_CONTROLLER,
             name=f"{state.name or DEFAULT_NAME} {controller.address}",
+            sw_version=_firmware(
+                controller.firmware
+                or entry.runtime_data.firmware.get(controller.address)
+            ),
             via_device_id=master_device.id,
         )
+
+
+def _firmware(version: int | None) -> str | None:
+    return str(version) if version else None
 
 
 async def async_migrate_entry(hass: HomeAssistant, entry: IconConfigEntry) -> bool:

@@ -42,8 +42,17 @@ async def test_poll_interval_and_recovery(
     client.get_state.side_effect = pyngbsicon.IconConnectionError("down")
     await _tick(hass, freezer)
     assert client.get_state.await_count == 2
+    # One failed poll is ridden out; the next attempt comes after 10 s.
+    state = hass.states.get(KITCHEN)
+    assert state is not None and state.state == "cool"
+    freezer.tick(timedelta(seconds=10))
+    async_fire_time_changed(hass)
+    await hass.async_block_till_done()
+    assert client.get_state.await_count == 3
     state = hass.states.get(KITCHEN)
     assert state is not None and state.state == STATE_UNAVAILABLE
+    await _tick(hass, freezer)  # still failing: the normal interval again
+    assert client.get_state.await_count == 4
 
     client.get_state.side_effect = None
     client.get_state.return_value = make_state(dp={"1.2": {"TEMP": 21.5}})
@@ -87,3 +96,62 @@ async def test_rejected_sysid_starts_reauth(
     await _tick(hass, freezer)
     flows = hass.config_entries.flow.async_progress()
     assert [f["context"]["source"] for f in flows] == [SOURCE_REAUTH]
+
+
+async def test_starting_controller_keeps_the_previous_state(
+    hass: HomeAssistant,
+    config_entry: MockConfigEntry,
+    mock_client: MagicMock,
+    freezer: FrozenDateTimeFactory,
+) -> None:
+    """Placeholder values of a restarting controller do not reach the entities."""
+    await setup_integration(hass, config_entry)
+    starting = make_state(HC=0, INFO={"FIRMWARE": 1079}, dp={"1.2": {"TEMP": 5}})
+    assert starting.starting
+    mock_client.return_value.get_state.return_value = starting
+    await _tick(hass, freezer)
+    state = hass.states.get(KITCHEN)
+    assert state is not None
+    assert state.state == "cool"
+    assert state.attributes["current_temperature"] == 23.4
+
+    # A firmware that never reports the task list is not frozen for long.
+    await _tick(hass, freezer)  # 30 s into the starting phase: still kept
+    freezer.tick(timedelta(seconds=40))
+    await _tick(hass, freezer)
+    state = hass.states.get(KITCHEN)
+    assert state is not None and state.attributes["current_temperature"] == 5
+
+    # A normal answer ends the starting phase.
+    mock_client.return_value.get_state.return_value = make_state()
+    await _tick(hass, freezer)
+    assert config_entry.runtime_data._starting_since is None
+
+
+async def test_single_failure_is_not_logged_as_error(
+    hass: HomeAssistant,
+    config_entry: MockConfigEntry,
+    mock_client: MagicMock,
+    freezer: FrozenDateTimeFactory,
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    await setup_integration(hass, config_entry)
+    client = mock_client.return_value
+    client.get_state.side_effect = pyngbsicon.IconProtocolError("empty answer")
+    await _tick(hass, freezer)
+    client.get_state.side_effect = None
+    client.get_state.return_value = make_state(dp={"1.2": {"TEMP": 22.0}})
+    freezer.tick(timedelta(seconds=10))
+    async_fire_time_changed(hass)
+    await hass.async_block_till_done()
+    state = hass.states.get(KITCHEN)
+    assert state is not None and state.attributes["current_temperature"] == 22.0
+    assert "Error fetching" not in caplog.text
+    statistics = config_entry.runtime_data.statistics
+    assert statistics.failures == 1
+
+    # The interval is back to normal and a later single failure is tolerated again.
+    client.get_state.side_effect = pyngbsicon.IconConnectionError("down")
+    await _tick(hass, freezer)
+    state = hass.states.get(KITCHEN)
+    assert state is not None and state.state == "cool"

@@ -32,6 +32,11 @@ versioned separately (tags `lib-v*`).
   cooling switched outside Home Assistant.
 - Diagnostics with secrets, network details and the building name redacted.
 - English and Hungarian translations.
+- Answers of a controller whose software is starting are skipped (they briefly report
+  the heating mode and a water temperature of 0 °C); a single failed poll keeps the
+  previous state instead of making every entity unavailable.
+- Device and relay names follow rooms renamed in the controller; slave controllers
+  show their firmware version.
 
 ### pyngbsicon (protocol library, unreleased)
 - `IconClient`: complete state with cached configuration, SYSID discovery, confirmed
@@ -43,4 +48,6 @@ versioned separately (tags `lib-v*`).
   `SignalRef`) including the relay matrix, H/C and ECO masters and signal bits.
 - Network scan and probe (`discover`, `probe`, `is_icon_mac`).
 - `pyngbsicon` command line tool.
-- `IconSystem.uptime` is documented in hours, as the controller reports it.
+- `IconSystem.uptime` is documented in hours (operating system uptime).
+- `IconSystem.starting` flags answers of a controller whose software is starting; a
+  supply water temperature of exactly 0 is reported as not measured.
