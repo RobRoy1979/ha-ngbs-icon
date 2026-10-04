@@ -307,7 +307,7 @@ class IconSystem:
     config_version: str | None
     timezone: str | None
     uptime: int | None
-    """Seconds since the controller software started."""
+    """Hours since the controller started (``INFO.UPTIME``; whole hours)."""
     mac: str | None
     ip: str | None
     cloud_connected: bool

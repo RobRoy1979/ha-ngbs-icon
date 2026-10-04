@@ -29,7 +29,7 @@ from homeassistant.const import (
 )
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import HomeAssistantError, ServiceValidationError
-from homeassistant.helpers import entity_registry as er
+from homeassistant.helpers import entity_registry as er, issue_registry as ir
 import pytest
 from pytest_homeassistant_custom_component.common import (
     MockConfigEntry,
@@ -37,6 +37,7 @@ from pytest_homeassistant_custom_component.common import (
 )
 from syrupy.assertion import SnapshotAssertion
 
+from custom_components.ngbs_icon.const import DOMAIN
 import pyngbsicon
 
 from .conftest import make_state, setup_integration
@@ -205,7 +206,7 @@ async def test_set_hvac_mode(
 
 @pytest.mark.parametrize(
     ("hc_master", "master_name"),
-    [("H1.1", "Living room"), ("H1.9", "H1.9"), ("", "?")],
+    [("H1.1", "Living room"), ("H1.9", "1.9")],
 )
 async def test_hvac_mode_only_on_the_master(
     hass: HomeAssistant,
@@ -299,3 +300,40 @@ async def test_written_state_is_published(
     kitchen = hass.states.get(KITCHEN)
     assert kitchen is not None
     assert kitchen.attributes[ATTR_TEMPERATURE] == 25
+
+
+async def test_hvac_mode_with_external_changeover(
+    hass: HomeAssistant,
+    config_entry: MockConfigEntry,
+    mock_client: MagicMock,
+    issue_registry: ir.IssueRegistry,
+) -> None:
+    """With an input switching heating/cooling, a mode change explains why it fails."""
+    mock_client.return_value.get_state.return_value = make_state(
+        cfg={"HCMASTER": "I1.4"}
+    )
+    await setup_integration(hass, config_entry)
+    living = hass.states.get(LIVING)
+    assert living is not None
+    assert living.attributes[ATTR_HVAC_MODES] == [HVACMode.COOL]
+    with pytest.raises(ServiceValidationError) as err:
+        await hass.services.async_call(
+            CLIMATE_DOMAIN,
+            SERVICE_SET_TEMPERATURE,
+            {
+                ATTR_ENTITY_ID: LIVING,
+                ATTR_HVAC_MODE: HVACMode.HEAT,
+                ATTR_TEMPERATURE: 21,
+            },
+            blocking=True,
+        )
+    assert err.value.translation_key == "hc_switch_external"
+    issue = issue_registry.async_get_issue(
+        DOMAIN, f"hc_switch_external_{config_entry.entry_id}"
+    )
+    assert issue is not None
+    assert issue.translation_placeholders == {
+        "title": "NGBS iCON (Home)",
+        "source": "I1.4",
+    }
+    mock_client.return_value.set_hc_mode.assert_not_called()

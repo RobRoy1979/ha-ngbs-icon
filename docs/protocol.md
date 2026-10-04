@@ -125,7 +125,7 @@ writable**: the controller answers normally but ignores them.
 | `EMAIL` | notification address |
 | `TZ` | IANA time zone |
 | `INFO.FIRMWARE` | firmware version, e.g. 1079 |
-| `INFO.UPTIME` | seconds since start |
+| `INFO.UPTIME` | hours since start (whole hours; observed: unchanged within minutes, +3 over 3.3 hours) |
 | `INFO.TASK` | running tasks, e.g. `["reg", "wdr"]` |
 | `INFO.NETL` | `MAC`, interface addresses (`eth0`, `eth0:1`, `tun0`; `tun0` present = cloud tunnel up) |
 

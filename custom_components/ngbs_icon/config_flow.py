@@ -36,10 +36,10 @@ from .const import (
     LOGGER,
     MAX_SCAN_INTERVAL,
     MIN_SCAN_INTERVAL,
-    entry_title,
 )
 from .coordinator import IconConfigEntry
 from .discovery import async_scan
+from .util import entry_title
 
 _MANUAL = "manual"
 _SYSID_RE = re.compile(r"\d{6,20}")

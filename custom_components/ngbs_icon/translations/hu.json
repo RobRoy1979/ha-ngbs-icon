@@ -91,9 +91,71 @@
       "options": {
         "manual": "Cím megadása kézzel"
       }
+    },
+    "system_mode": {
+      "options": {
+        "heating": "Fűtés",
+        "cooling": "Hűtés"
+      }
     }
   },
   "entity": {
+    "binary_sensor": {
+      "pump": {
+        "name": "Szivattyú"
+      },
+      "fault": {
+        "name": "Hibajelzés"
+      },
+      "overheat": {
+        "name": "Túlfűtés-védelem"
+      },
+      "frost_warning": {
+        "name": "Fagyveszély"
+      },
+      "regulation": {
+        "name": "Szabályozás"
+      },
+      "cloud_connection": {
+        "name": "Felhőkapcsolat"
+      },
+      "output": {
+        "name": "Kimenet aktív"
+      },
+      "connected": {
+        "name": "Kapcsolat"
+      },
+      "dew_protection": {
+        "name": "Harmatpont-védelem"
+      },
+      "frost_protection": {
+        "name": "Fagyvédelem"
+      },
+      "time_program": {
+        "name": "Időprogram"
+      },
+      "eco_follows_master": {
+        "name": "ECO követi a mestert"
+      },
+      "heating_relay": {
+        "name": "Fűtés relé"
+      },
+      "cooling_relay": {
+        "name": "Hűtés relé"
+      },
+      "pump_relay": {
+        "name": "Szivattyú relé"
+      },
+      "switched_output_relay": {
+        "name": "Kapcsolt kimenet relé"
+      },
+      "valve": {
+        "name": "Szelep {number}"
+      },
+      "valve_room": {
+        "name": "Szelep {number} ({room})"
+      }
+    },
     "climate": {
       "thermostat": {
         "state_attributes": {
@@ -102,8 +164,104 @@
               "comfort": "Komfort",
               "eco": "Eco"
             }
+          },
+          "dew_point": {
+            "name": "Harmatpont"
+          },
+          "thermostat_id": {
+            "name": "Termosztát-azonosító"
           }
         }
+      }
+    },
+    "lock": {
+      "keypad_lock": {
+        "name": "Gyerekzár"
+      }
+    },
+    "number": {
+      "heat_setpoint": {
+        "name": "Fűtési alapjel"
+      },
+      "cool_setpoint": {
+        "name": "Hűtési alapjel"
+      },
+      "eco_heat_setpoint": {
+        "name": "ECO fűtési alapjel"
+      },
+      "eco_cool_setpoint": {
+        "name": "ECO hűtési alapjel"
+      },
+      "setpoint_limit": {
+        "name": "Alapjel-tartomány"
+      },
+      "loop_b_offset_heat": {
+        "name": "B-kör fűtési eltolás"
+      },
+      "loop_b_offset_cool": {
+        "name": "B-kör hűtési eltolás"
+      }
+    },
+    "select": {
+      "system_mode": {
+        "name": "Üzemmód",
+        "state": {
+          "heating": "Fűtés",
+          "cooling": "Hűtés"
+        }
+      }
+    },
+    "sensor": {
+      "water_temperature": {
+        "name": "Vízhőmérséklet"
+      },
+      "outdoor_temperature": {
+        "name": "Külső hőmérséklet"
+      },
+      "config_version": {
+        "name": "Konfiguráció verziója"
+      },
+      "default_heat_setpoint": {
+        "name": "Alapértelmezett fűtési alapjel"
+      },
+      "default_cool_setpoint": {
+        "name": "Alapértelmezett hűtési alapjel"
+      },
+      "default_eco_heat_setpoint": {
+        "name": "Alapértelmezett ECO fűtési alapjel"
+      },
+      "default_eco_cool_setpoint": {
+        "name": "Alapértelmezett ECO hűtési alapjel"
+      },
+      "mixing_valve": {
+        "name": "Keverőszelep"
+      },
+      "supply_voltage": {
+        "name": "Tápfeszültség"
+      },
+      "thermostat_bus_voltage": {
+        "name": "Termosztát-busz feszültség"
+      },
+      "dew_point": {
+        "name": "Harmatpont"
+      },
+      "system_mode": {
+        "name": "Üzemmód",
+        "state": {
+          "heating": "Fűtés",
+          "cooling": "Hűtés"
+        }
+      },
+      "uptime": {
+        "name": "Üzemidő"
+      }
+    },
+    "switch": {
+      "eco": {
+        "name": "ECO üzemmód"
+      },
+      "switched_output": {
+        "name": "Kapcsolt kimenet"
       }
     }
   },
@@ -128,6 +286,81 @@
     },
     "hc_switch_not_allowed": {
       "message": "Fűtés és hűtés között csak a H/C-mester termosztáton lehet váltani ({master})."
+    },
+    "hc_switch_external": {
+      "message": "Ebben a rendszerben a fűtés/hűtés váltását egy bemenet vagy központi kapcsoló végzi, nem termosztát, ezért a Home Assistant nem tudja átváltani. A részletek a javítási javaslatban."
+    },
+    "setpoint_out_of_range": {
+      "message": "{entity}: a(z) {field} értéke {min} és {max} °C között lehet (megadva: {value})."
+    },
+    "no_setpoint": {
+      "message": "Adj meg legalább egy alapjelet."
+    }
+  },
+  "issues": {
+    "old_firmware": {
+      "title": "{title}: elavult a vezérlő firmware-e",
+      "description": "A vezérlő firmware-e {firmware}. A(z) {required}-es verziótól elárulja a rendszerazonosítóját a hálózaton, így a Home Assistant magától megtalálja, és követi, ha megváltozik a címe. Frissítés a termosztát szervizmenüjében: UPGRADE FROM THE NET."
+    },
+    "thermostat_offline": {
+      "title": "{name} nem kommunikál",
+      "description": "A(z) {title} rendszer {name} ({id}) termosztátja több mint egy órája nem kommunikál a vezérlővel, ezért az értékei és beállításai nem érhetők el. Ellenőrizd a tápellátását és a busz-kábelt. Ha végleg leszerelték, töröld a vezérlő konfigurációjából; a Home Assistant ezután szintén eltávolítja."
+    },
+    "hc_switch_external": {
+      "title": "{title}: a fűtés/hűtés váltása a Home Assistanton kívül történik",
+      "description": "A fűtés/hűtés váltását {source} végzi (a vezérlő egy bemenete vagy központi kapcsoló), nem termosztát. A vezérlő a hálózaton küldött módváltást figyelmen kívül hagyja, ezért a Home Assistant csak mutatja az üzemmódot. A külső kapcsolóval válts, vagy kérd meg a telepítőt, hogy egy termosztát legyen a H/C-mester."
+    },
+    "duplicate_system": {
+      "title": "Kétszer beállított NGBS iCON rendszer",
+      "description": "A korábbi NGBS iCON integrációtól átvett „{title}” bejegyzés ugyanazt a rendszert vezérli, mint a(z) „{other}”. Mindkettő olvassa és vezérli a vezérlőt. Az egyiket töröld a Beállítások → Eszközök és szolgáltatások oldalon."
+    }
+  },
+  "services": {
+    "set_setpoints": {
+      "name": "Alapjelek beállítása",
+      "description": "A termosztátok több alapjelét egy lépésben módosítja, a most nem érvényeseket is (pl. a hűtési alapjelet télen).",
+      "fields": {
+        "heating": {
+          "name": "Fűtés",
+          "description": "Üresen hagyva a jelenlegi érték marad."
+        },
+        "cooling": {
+          "name": "Hűtés",
+          "description": "Üresen hagyva a jelenlegi érték marad."
+        },
+        "eco_heating": {
+          "name": "ECO fűtés",
+          "description": "Üresen hagyva a jelenlegi érték marad."
+        },
+        "eco_cooling": {
+          "name": "ECO hűtés",
+          "description": "Üresen hagyva a jelenlegi érték marad."
+        }
+      }
+    },
+    "set_system_mode": {
+      "name": "Üzemmód beállítása",
+      "description": "Az egész rendszert fűtésre vagy hűtésre váltja. A vezérlő a váltó reléket néhány perccel később kapcsolja át.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Rendszer",
+          "description": "Az NGBS iCON rendszer; üresen hagyható, ha csak egy van beállítva."
+        },
+        "mode": {
+          "name": "Üzemmód",
+          "description": "Fűtés vagy hűtés."
+        }
+      }
+    },
+    "restart_controller": {
+      "name": "Vezérlő újraindítása",
+      "description": "Újraindítja a vezérlő szoftverét. A szabályozás egy pillanatra szünetel, a beállítások megmaradnak.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Rendszer",
+          "description": "Az NGBS iCON rendszer; üresen hagyható, ha csak egy van beállítva."
+        }
+      }
     }
   }
 }

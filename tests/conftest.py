@@ -6,14 +6,14 @@ that answers with models parsed from the recorded (anonymised) controller respon
 
 from __future__ import annotations
 
-from collections.abc import Generator
+from collections.abc import Callable, Generator
 import copy
 import json
 from pathlib import Path
 from typing import Any
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock, PropertyMock, patch
 
-from homeassistant.const import CONF_HOST, CONF_MAC, CONF_SCAN_INTERVAL
+from homeassistant.const import CONF_HOST, CONF_MAC, CONF_SCAN_INTERVAL, Platform
 from homeassistant.core import HomeAssistant
 import pytest
 from pytest_homeassistant_custom_component.common import MockConfigEntry
@@ -35,18 +35,34 @@ def load_raw(name: str = "state_full") -> dict[str, Any]:
     return json.loads((FIXTURES / f"{name}.json").read_text(encoding="utf-8"))
 
 
-def make_state(**changes: Any) -> pyngbsicon.IconSystem:
+def make_state(
+    mutate: Callable[[dict[str, Any]], None] | None = None, **changes: Any
+) -> pyngbsicon.IconSystem:
     """The recorded system, optionally with top-level or thermostat changes.
 
-    ``changes`` may contain top-level fields and ``dp={"1.1": {"TEMP": 20}}``.
+    ``changes`` may contain top-level fields and ``dp={"1.1": {"TEMP": 20}}``;
+    ``mutate`` can change the raw answer in any other way.
     """
     raw = copy.deepcopy(load_raw())
     for thermostat_id, fields in changes.pop("dp", {}).items():
-        raw["DP"][thermostat_id].update(fields)
+        raw["DP"].setdefault(thermostat_id, {}).update(fields)
     for key, value in changes.pop("cfg", {}).items():
         raw["CFG"][key] = value
     raw.update(changes)
+    if mutate is not None:
+        mutate(raw)
     return pyngbsicon.parse_state(raw)
+
+
+def add_slave(raw: dict[str, Any]) -> None:
+    """Add a slave controller (address 2) with one installed thermostat."""
+    slave = copy.deepcopy(raw["CFG"]["ICON1"])
+    for relay in slave["RELAY"].values():
+        relay["FUNC"] = relay["FUNC"].replace("R1.", "R2.")
+        relay["OR"] = [ref.replace("1.", "2.", 1) for ref in relay["OR"]]
+    raw["CFG"]["ICON2"] = slave
+    raw["CFG"]["ICONS"] = 2
+    raw["DP"]["2.1"] = {**raw["DP"]["1.2"], "NAME": "Attic"}
 
 
 @pytest.fixture(autouse=True)
@@ -77,9 +93,39 @@ def mock_client(state: pyngbsicon.IconSystem) -> Generator[MagicMock]:
             "set_eco",
             "set_lock",
             "set_hc_mode",
+            "set_switched_output",
+            "set_thermostat",
         ):
             setattr(client, name, AsyncMock(return_value=state))
+        client.restart = AsyncMock(return_value=None)
         yield client_class
+
+
+@pytest.fixture
+def entity_registry_enabled_by_default() -> Generator[None]:
+    """Create the entities that are disabled by default as enabled (for snapshots)."""
+    with patch(
+        "homeassistant.helpers.entity.Entity.entity_registry_enabled_default",
+        new_callable=PropertyMock,
+        return_value=True,
+    ):
+        yield
+
+
+@pytest.fixture
+def platforms() -> list[Platform] | None:
+    """The platforms to set up; ``None`` means all of them."""
+    return None
+
+
+@pytest.fixture(autouse=True)
+def limit_platforms(platforms: list[Platform] | None) -> Generator[None]:
+    """Set up only the platforms a test module is about."""
+    if platforms is None:
+        yield
+        return
+    with patch("custom_components.ngbs_icon.PLATFORMS", platforms):
+        yield
 
 
 @pytest.fixture

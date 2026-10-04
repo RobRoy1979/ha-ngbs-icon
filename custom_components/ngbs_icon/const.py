@@ -19,8 +19,3 @@ MODEL_CONTROLLER: Final = "iCON controller"
 MODEL_THERMOSTAT: Final = "iCON thermostat"
 
 DEFAULT_NAME: Final = "NGBS iCON"
-
-
-def entry_title(building: str | None) -> str:
-    """Title of a config entry: the building name configured in the controller."""
-    return f"{DEFAULT_NAME} ({building})" if building else DEFAULT_NAME

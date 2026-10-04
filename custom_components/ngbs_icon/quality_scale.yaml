@@ -1,0 +1,104 @@
+rules:
+  # Bronze
+  action-setup: done
+  appropriate-polling:
+    status: done
+    comment: Every 30 seconds by default, 10-300 seconds in the options; writes publish the confirmed state at once.
+  brands: done
+  common-modules: done
+  config-flow: done
+  config-flow-test-coverage: done
+  dependency-transparency:
+    status: todo
+    comment: pyngbsicon is open source and bundled for now; it is published to PyPI from CI with the first release.
+  docs-actions:
+    status: todo
+    comment: The README is completed for the first release.
+  docs-conditions:
+    status: exempt
+    comment: The integration provides no conditions.
+  docs-high-level-description:
+    status: todo
+    comment: The README is completed for the first release.
+  docs-installation-instructions:
+    status: todo
+    comment: The README is completed for the first release.
+  docs-removal-instructions:
+    status: todo
+    comment: The README is completed for the first release.
+  docs-triggers:
+    status: exempt
+    comment: The integration provides no triggers.
+  entity-event-setup:
+    status: exempt
+    comment: Entities are updated by the coordinator; none subscribes to events.
+  entity-unique-id: done
+  has-entity-name: done
+  runtime-data: done
+  test-before-configure: done
+  test-before-setup: done
+  unique-config-entry: done
+
+  # Silver
+  action-exceptions: done
+  config-entry-unloading: done
+  docs-configuration-parameters:
+    status: todo
+    comment: The README is completed for the first release.
+  docs-installation-parameters:
+    status: todo
+    comment: The README is completed for the first release.
+  entity-unavailable: done
+  integration-owner: done
+  log-when-unavailable:
+    status: done
+    comment: Logged by the data update coordinator.
+  parallel-updates: done
+  reauthentication-flow: done
+  test-coverage: done
+
+  # Gold
+  devices: done
+  diagnostics: done
+  discovery: done
+  discovery-update-info: done
+  docs-data-update:
+    status: todo
+    comment: The README is completed for the first release.
+  docs-examples:
+    status: todo
+    comment: The README is completed for the first release.
+  docs-known-limitations:
+    status: todo
+    comment: The README is completed for the first release.
+  docs-supported-devices:
+    status: todo
+    comment: The README is completed for the first release.
+  docs-supported-functions:
+    status: todo
+    comment: The README is completed for the first release.
+  docs-troubleshooting:
+    status: todo
+    comment: The README is completed for the first release.
+  docs-use-cases:
+    status: todo
+    comment: The README is completed for the first release.
+  dynamic-devices: done
+  entity-category: done
+  entity-device-class: done
+  entity-disabled-by-default: done
+  entity-translations: done
+  exception-translations: done
+  icon-translations: done
+  reconfiguration-flow: done
+  repair-issues: done
+  stale-devices:
+    status: done
+    comment: Thermostats uninstalled in the controller are removed; devices no longer in the system can be removed manually.
+
+  # Platinum
+  async-dependency: done
+  inject-websession:
+    status: exempt
+    comment: The controller speaks a raw TCP protocol; there is no HTTP session to share.
+  strict-typing: done

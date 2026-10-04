@@ -8,14 +8,19 @@ from unittest.mock import MagicMock
 from homeassistant.config_entries import SOURCE_REAUTH, ConfigEntryState
 from homeassistant.const import CONF_HOST, CONF_IP_ADDRESS, CONF_MAC, CONF_SCAN_INTERVAL
 from homeassistant.core import HomeAssistant
-from homeassistant.helpers import device_registry as dr, entity_registry as er
+from homeassistant.helpers import (
+    device_registry as dr,
+    entity_registry as er,
+    issue_registry as ir,
+)
+from homeassistant.setup import async_setup_component
 import pytest
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
 from custom_components.ngbs_icon.const import CONF_SYSID, DOMAIN
 import pyngbsicon
 
-from .conftest import HOST, MAC, SYSID, make_state, setup_integration
+from .conftest import HOST, MAC, SYSID, add_slave, make_state, setup_integration
 
 
 @pytest.mark.usefixtures("mock_client")
@@ -243,6 +248,14 @@ async def test_migrate_v1_when_the_system_is_set_up_twice(
     assert entry.version == 2
     assert entry.unique_id is None  # the new entry keeps the SYSID
     assert "is also set up as NGBS iCON (Home)" in caplog.text
+    issue = ir.async_get(hass).async_get_issue(
+        DOMAIN, f"duplicate_system_{entry.entry_id}"
+    )
+    assert issue is not None
+    assert issue.translation_placeholders == {
+        "title": "NGBS iCON (Home)",
+        "other": "NGBS iCON (Home)",
+    }
 
 
 @pytest.mark.usefixtures("mock_client")
@@ -276,3 +289,108 @@ async def test_current_version_is_not_changed(
     await setup_integration(hass, entry)
     assert entry.state is ConfigEntryState.LOADED
     assert entry.data == config_entry.data
+
+
+async def test_new_thermostat_gets_entities(
+    hass: HomeAssistant,
+    config_entry: MockConfigEntry,
+    mock_client: MagicMock,
+    device_registry: dr.DeviceRegistry,
+) -> None:
+    """A thermostat installed while Home Assistant runs appears at the next poll."""
+    await setup_integration(hass, config_entry)
+    assert hass.states.get("climate.kids_room") is None
+    mock_client.return_value.get_state.return_value = make_state(
+        dp={"1.6": {"ON": 1, "LIVE": 1, "TEMP": 21.0}}
+    )
+    await config_entry.runtime_data.async_refresh()
+    await hass.async_block_till_done()
+    assert hass.states.get("climate.kids_room") is not None
+    assert hass.states.get("sensor.kids_room_temperature") is not None
+    assert hass.states.get("binary_sensor.home_valve_6_kids_room") is not None
+    assert device_registry.async_get_device_by_identifier(
+        (DOMAIN, f"{SYSID}-1.6"), config_entry.entry_id
+    )
+
+
+async def test_new_slave_controller_gets_a_device(
+    hass: HomeAssistant,
+    config_entry: MockConfigEntry,
+    mock_client: MagicMock,
+    device_registry: dr.DeviceRegistry,
+) -> None:
+    await setup_integration(hass, config_entry)
+    mock_client.return_value.get_state.return_value = make_state(add_slave)
+    await config_entry.runtime_data.async_refresh()
+    await hass.async_block_till_done()
+    master = device_registry.async_get_device_by_identifier(
+        (DOMAIN, SYSID), config_entry.entry_id
+    )
+    slave = device_registry.async_get_device_by_identifier(
+        (DOMAIN, f"{SYSID}-controller-2"), config_entry.entry_id
+    )
+    attic = device_registry.async_get_device_by_identifier(
+        (DOMAIN, f"{SYSID}-2.1"), config_entry.entry_id
+    )
+    assert master and slave and attic
+    assert attic.via_device_id == slave.id
+    assert slave.via_device_id == master.id
+    assert hass.states.get("climate.attic") is not None
+
+
+async def test_uninstalled_thermostat_is_removed(
+    hass: HomeAssistant,
+    config_entry: MockConfigEntry,
+    mock_client: MagicMock,
+    device_registry: dr.DeviceRegistry,
+    entity_registry: er.EntityRegistry,
+) -> None:
+    await setup_integration(hass, config_entry)
+    identifier = (DOMAIN, f"{SYSID}-1.5")
+    assert device_registry.async_get_device_by_identifier(
+        identifier, config_entry.entry_id
+    )
+
+    # Missing from the answer (e.g. its controller does not respond): kept.
+    state = make_state()
+    gone = {k: v for k, v in state.thermostats.items() if k != "1.5"}
+    mock_client.return_value.get_state.return_value = dataclasses.replace(
+        state, thermostats=gone
+    )
+    await config_entry.runtime_data.async_refresh()
+    await hass.async_block_till_done()
+    assert device_registry.async_get_device_by_identifier(
+        identifier, config_entry.entry_id
+    )
+
+    # Uninstalled in the controller configuration: removed, the entry reloads.
+    mock_client.return_value.get_state.return_value = make_state(dp={"1.5": {"ON": 0}})
+    await config_entry.runtime_data.async_refresh()
+    await hass.async_block_till_done()
+    assert not device_registry.async_get_device_by_identifier(
+        identifier, config_entry.entry_id
+    )
+    assert entity_registry.async_get("climate.office") is None
+    assert config_entry.state is ConfigEntryState.LOADED
+
+
+async def test_remove_device_manually(
+    hass: HomeAssistant,
+    config_entry: MockConfigEntry,
+    mock_client: MagicMock,
+    device_registry: dr.DeviceRegistry,
+) -> None:
+    assert await async_setup_component(hass, "config", {})
+    await setup_integration(hass, config_entry)
+    old = device_registry.async_get_or_create(
+        config_entry_id=config_entry.entry_id, identifiers={(DOMAIN, f"{SYSID}-3.1")}
+    )
+    current = device_registry.async_get_device_by_identifier(
+        (DOMAIN, f"{SYSID}-1.1"), config_entry.entry_id
+    )
+    assert current is not None
+    module = hass.data["integrations"][DOMAIN].get_component()
+    assert await module.async_remove_config_entry_device(hass, config_entry, old)
+    assert not await module.async_remove_config_entry_device(
+        hass, config_entry, current
+    )

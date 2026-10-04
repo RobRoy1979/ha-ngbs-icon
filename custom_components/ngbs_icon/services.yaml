@@ -1,0 +1,60 @@
+set_setpoints:
+  target:
+    entity:
+      integration: ngbs_icon
+      domain: climate
+  fields:
+    heating:
+      selector:
+        number:
+          min: 5
+          max: 35
+          step: 0.5
+          unit_of_measurement: "°C"
+          mode: box
+    cooling:
+      selector:
+        number:
+          min: 5
+          max: 35
+          step: 0.5
+          unit_of_measurement: "°C"
+          mode: box
+    eco_heating:
+      selector:
+        number:
+          min: 5
+          max: 35
+          step: 0.5
+          unit_of_measurement: "°C"
+          mode: box
+    eco_cooling:
+      selector:
+        number:
+          min: 5
+          max: 35
+          step: 0.5
+          unit_of_measurement: "°C"
+          mode: box
+
+set_system_mode:
+  fields:
+    config_entry_id:
+      selector:
+        config_entry:
+          integration: ngbs_icon
+    mode:
+      required: true
+      selector:
+        select:
+          options:
+            - heating
+            - cooling
+          translation_key: system_mode
+
+restart_controller:
+  fields:
+    config_entry_id:
+      selector:
+        config_entry:
+          integration: ngbs_icon

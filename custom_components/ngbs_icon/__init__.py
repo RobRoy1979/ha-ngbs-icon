@@ -12,9 +12,14 @@ from homeassistant.const import (
     CONF_SCAN_INTERVAL,
     Platform,
 )
-from homeassistant.core import HomeAssistant
+from homeassistant.core import HomeAssistant, callback
 from homeassistant.exceptions import ConfigEntryAuthFailed
-from homeassistant.helpers import device_registry as dr, entity_registry as er
+from homeassistant.helpers import (
+    config_validation as cv,
+    device_registry as dr,
+    entity_registry as er,
+)
+from homeassistant.helpers.typing import ConfigType
 
 from ._lib import pyngbsicon
 from .const import (
@@ -27,14 +32,37 @@ from .const import (
     MAX_SCAN_INTERVAL,
     MIN_SCAN_INTERVAL,
     MODEL_CONTROLLER,
-    entry_title,
 )
 from .coordinator import IconConfigEntry, IconCoordinator
-from .entity import controller_identifier
+from .entity import controller_identifier, master_address, thermostat_identifier
+from .issues import (
+    async_create_duplicate_issue,
+    async_delete_issues,
+    async_update_issues,
+)
+from .services import async_setup_services
+from .util import entry_title
 
-PLATFORMS = [Platform.CLIMATE]
+PLATFORMS = [
+    Platform.BINARY_SENSOR,
+    Platform.BUTTON,
+    Platform.CLIMATE,
+    Platform.LOCK,
+    Platform.NUMBER,
+    Platform.SELECT,
+    Platform.SENSOR,
+    Platform.SWITCH,
+]
+
+CONFIG_SCHEMA = cv.config_entry_only_config_schema(DOMAIN)
 
 _SYSID_RE = re.compile(r"\d{6,20}")
+
+
+async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
+    """Register the actions (they work with every config entry of the domain)."""
+    async_setup_services(hass)
+    return True
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: IconConfigEntry) -> bool:
@@ -54,7 +82,21 @@ async def async_setup_entry(hass: HomeAssistant, entry: IconConfigEntry) -> bool
         hass.config_entries.async_update_entry(
             entry, data={**entry.data, CONF_MAC: state.mac}
         )
-    _register_controllers(hass, entry, state)
+
+    @callback
+    def on_update() -> None:
+        # Devices first: a slave controller added later needs one for its entities.
+        _register_controllers(hass, entry, coordinator.data)
+        _remove_uninstalled_thermostats(hass, entry)
+
+    on_update()
+    entry.async_on_unload(coordinator.async_add_listener(on_update))
+    async_update_issues(hass, entry, state)
+    entry.async_on_unload(
+        coordinator.async_add_poll_listener(
+            lambda polled: async_update_issues(hass, entry, polled)
+        )
+    )
 
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
     return True
@@ -65,18 +107,69 @@ async def async_unload_entry(hass: HomeAssistant, entry: IconConfigEntry) -> boo
     return await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
 
 
+async def async_remove_entry(hass: HomeAssistant, entry: IconConfigEntry) -> None:
+    """Remove the repair issues of a deleted config entry."""
+    async_delete_issues(hass, entry)
+
+
+async def async_remove_config_entry_device(
+    hass: HomeAssistant, entry: IconConfigEntry, device: dr.DeviceEntry
+) -> bool:
+    """Allow removing a device that is no longer part of the system."""
+    return not device.identifiers & _current_identifiers(entry.runtime_data.data)
+
+
+def _current_identifiers(system: pyngbsicon.IconSystem) -> set[tuple[str, str]]:
+    master = master_address(system)
+    identifiers = {controller_identifier(system.sysid, master, master)}
+    identifiers.update(
+        controller_identifier(system.sysid, address, master)
+        for address in system.controllers
+    )
+    identifiers.update(
+        thermostat_identifier(system.sysid, thermostat_id)
+        for thermostat_id in system.configured_thermostats
+    )
+    return identifiers
+
+
+@callback
+def _remove_uninstalled_thermostats(
+    hass: HomeAssistant, entry: IconConfigEntry
+) -> None:
+    """Remove the devices of thermostats the controller reports as not installed.
+
+    A thermostat that is merely missing from an answer (for example behind a slave
+    controller that does not respond) keeps its device and entity history.
+    """
+    system = entry.runtime_data.data
+    registry = dr.async_get(hass)
+    removed = False
+    for thermostat_id, thermostat in system.thermostats.items():
+        if thermostat.configured:
+            continue
+        device = registry.async_get_device_by_identifier(
+            thermostat_identifier(system.sysid, thermostat_id), entry.entry_id
+        )
+        if device is not None:
+            registry.async_update_device(
+                device.id, remove_config_entry_id=entry.entry_id
+            )
+            removed = True
+    if removed:
+        # Start over, so the thermostat gets its entities again if it is reinstalled.
+        hass.config_entries.async_schedule_reload(entry.entry_id)
+
+
 def _register_controllers(
     hass: HomeAssistant, entry: IconConfigEntry, state: pyngbsicon.IconSystem
 ) -> None:
     """Register the controllers first, so thermostat devices can refer to them."""
     registry = dr.async_get(hass)
-    master = state.master
-    master_address = master.address if master else 1
+    master = master_address(state)
     master_device = registry.async_get_or_create(
         config_entry_id=entry.entry_id,
-        identifiers={
-            controller_identifier(state.sysid, master_address, master_address)
-        },
+        identifiers={controller_identifier(state.sysid, master, master)},
         connections={(dr.CONNECTION_NETWORK_MAC, state.mac)} if state.mac else set(),
         manufacturer=MANUFACTURER,
         model=MODEL_CONTROLLER,
@@ -91,7 +184,7 @@ def _register_controllers(
         registry.async_get_or_create(
             config_entry_id=entry.entry_id,
             identifiers={
-                controller_identifier(state.sysid, controller.address, master_address)
+                controller_identifier(state.sysid, controller.address, master)
             },
             manufacturer=MANUFACTURER,
             model=MODEL_CONTROLLER,
@@ -120,6 +213,7 @@ async def async_migrate_entry(hass: HomeAssistant, entry: IconConfigEntry) -> bo
             if title in {host, DEFAULT_NAME}:
                 title = entry_title(state.name)
         unique_id = entry.unique_id
+        duplicate_of = None
         if sysid:
             other = hass.config_entries.async_entry_for_domain_unique_id(DOMAIN, sysid)
             if other is None or other.entry_id == entry.entry_id:
@@ -130,6 +224,7 @@ async def async_migrate_entry(hass: HomeAssistant, entry: IconConfigEntry) -> bo
                     host,
                     other.title,
                 )
+                duplicate_of = other
         interval = entry.options.get(
             CONF_SCAN_INTERVAL, data.get(CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL)
         )
@@ -149,6 +244,8 @@ async def async_migrate_entry(hass: HomeAssistant, entry: IconConfigEntry) -> bo
             version=2,
             minor_version=1,
         )
+        if duplicate_of is not None:
+            async_create_duplicate_issue(hass, entry, duplicate_of)
         LOGGER.info(
             "Migrated the NGBS iCON entry for %s from version 1%s",
             host,

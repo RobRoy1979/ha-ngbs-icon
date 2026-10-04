@@ -91,9 +91,71 @@
       "options": {
         "manual": "Enter an address manually"
       }
+    },
+    "system_mode": {
+      "options": {
+        "heating": "Heating",
+        "cooling": "Cooling"
+      }
     }
   },
   "entity": {
+    "binary_sensor": {
+      "pump": {
+        "name": "Pump"
+      },
+      "fault": {
+        "name": "Fault signal"
+      },
+      "overheat": {
+        "name": "Overheat protection"
+      },
+      "frost_warning": {
+        "name": "Frost warning"
+      },
+      "regulation": {
+        "name": "Regulation"
+      },
+      "cloud_connection": {
+        "name": "Cloud connection"
+      },
+      "output": {
+        "name": "Output active"
+      },
+      "connected": {
+        "name": "Connected"
+      },
+      "dew_protection": {
+        "name": "Dew point protection"
+      },
+      "frost_protection": {
+        "name": "Frost protection"
+      },
+      "time_program": {
+        "name": "Time program"
+      },
+      "eco_follows_master": {
+        "name": "Eco follows master"
+      },
+      "heating_relay": {
+        "name": "Heating relay"
+      },
+      "cooling_relay": {
+        "name": "Cooling relay"
+      },
+      "pump_relay": {
+        "name": "Pump relay"
+      },
+      "switched_output_relay": {
+        "name": "Switched output relay"
+      },
+      "valve": {
+        "name": "Valve {number}"
+      },
+      "valve_room": {
+        "name": "Valve {number} ({room})"
+      }
+    },
     "climate": {
       "thermostat": {
         "state_attributes": {
@@ -102,8 +164,104 @@
               "comfort": "Comfort",
               "eco": "Eco"
             }
+          },
+          "dew_point": {
+            "name": "Dew point"
+          },
+          "thermostat_id": {
+            "name": "Thermostat ID"
           }
         }
+      }
+    },
+    "lock": {
+      "keypad_lock": {
+        "name": "Child lock"
+      }
+    },
+    "number": {
+      "heat_setpoint": {
+        "name": "Heating setpoint"
+      },
+      "cool_setpoint": {
+        "name": "Cooling setpoint"
+      },
+      "eco_heat_setpoint": {
+        "name": "Eco heating setpoint"
+      },
+      "eco_cool_setpoint": {
+        "name": "Eco cooling setpoint"
+      },
+      "setpoint_limit": {
+        "name": "Setpoint limit"
+      },
+      "loop_b_offset_heat": {
+        "name": "B-loop heating offset"
+      },
+      "loop_b_offset_cool": {
+        "name": "B-loop cooling offset"
+      }
+    },
+    "select": {
+      "system_mode": {
+        "name": "System mode",
+        "state": {
+          "heating": "Heating",
+          "cooling": "Cooling"
+        }
+      }
+    },
+    "sensor": {
+      "water_temperature": {
+        "name": "Water temperature"
+      },
+      "outdoor_temperature": {
+        "name": "Outdoor temperature"
+      },
+      "config_version": {
+        "name": "Configuration version"
+      },
+      "default_heat_setpoint": {
+        "name": "Default heating setpoint"
+      },
+      "default_cool_setpoint": {
+        "name": "Default cooling setpoint"
+      },
+      "default_eco_heat_setpoint": {
+        "name": "Default eco heating setpoint"
+      },
+      "default_eco_cool_setpoint": {
+        "name": "Default eco cooling setpoint"
+      },
+      "mixing_valve": {
+        "name": "Mixing valve"
+      },
+      "supply_voltage": {
+        "name": "Supply voltage"
+      },
+      "thermostat_bus_voltage": {
+        "name": "Thermostat bus voltage"
+      },
+      "dew_point": {
+        "name": "Dew point"
+      },
+      "system_mode": {
+        "name": "System mode",
+        "state": {
+          "heating": "Heating",
+          "cooling": "Cooling"
+        }
+      },
+      "uptime": {
+        "name": "Uptime"
+      }
+    },
+    "switch": {
+      "eco": {
+        "name": "Eco mode"
+      },
+      "switched_output": {
+        "name": "Switched output"
       }
     }
   },
@@ -128,6 +286,81 @@
     },
     "hc_switch_not_allowed": {
       "message": "Heating and cooling can only be switched on the H/C master thermostat ({master})."
+    },
+    "hc_switch_external": {
+      "message": "Heating and cooling are switched by an input or centrally in this system, not by a thermostat, so Home Assistant cannot change the mode. See the repair issue for details."
+    },
+    "setpoint_out_of_range": {
+      "message": "{entity}: {field} must be between {min} and {max} °C (got {value})."
+    },
+    "no_setpoint": {
+      "message": "Give at least one setpoint."
+    }
+  },
+  "issues": {
+    "old_firmware": {
+      "title": "{title}: controller firmware is out of date",
+      "description": "The controller runs firmware {firmware}. From version {required} it reveals its system ID on the network, so Home Assistant can find it automatically and follow it when its address changes. Update it in the thermostat's service menu: UPGRADE FROM THE NET."
+    },
+    "thermostat_offline": {
+      "title": "{name} does not communicate",
+      "description": "Thermostat {name} ({id}) of {title} has not communicated with the controller for over an hour, so its values and settings are unavailable. Check its power supply and the bus cable. If it was removed for good, uninstall it in the controller configuration; Home Assistant then removes it as well."
+    },
+    "hc_switch_external": {
+      "title": "{title}: heating/cooling is switched outside Home Assistant",
+      "description": "Heating and cooling are switched by {source} (an input of the controller or a central switch), not by a thermostat. The controller ignores mode changes sent over the network, so Home Assistant only shows the mode. Switch it with the external switch, or ask the installer to make a thermostat the H/C master."
+    },
+    "duplicate_system": {
+      "title": "NGBS iCON system set up twice",
+      "description": "The entry \"{title}\", taken over from the earlier NGBS iCON integration, controls the same system as \"{other}\". Both read and control the controller. Delete one of them under Settings → Devices & services."
+    }
+  },
+  "services": {
+    "set_setpoints": {
+      "name": "Set setpoints",
+      "description": "Changes several setpoints of the thermostats in one step, including the ones that are not in effect now (for example the cooling setpoint in winter).",
+      "fields": {
+        "heating": {
+          "name": "Heating",
+          "description": "Leave empty to keep the current value."
+        },
+        "cooling": {
+          "name": "Cooling",
+          "description": "Leave empty to keep the current value."
+        },
+        "eco_heating": {
+          "name": "Eco heating",
+          "description": "Leave empty to keep the current value."
+        },
+        "eco_cooling": {
+          "name": "Eco cooling",
+          "description": "Leave empty to keep the current value."
+        }
+      }
+    },
+    "set_system_mode": {
+      "name": "Set system mode",
+      "description": "Switches the whole system between heating and cooling. The controller switches its changeover relays several minutes later.",
+      "fields": {
+        "config_entry_id": {
+          "name": "System",
+          "description": "The NGBS iCON system; can be left empty when only one is set up."
+        },
+        "mode": {
+          "name": "Mode",
+          "description": "Heating or cooling."
+        }
+      }
+    },
+    "restart_controller": {
+      "name": "Restart controller",
+      "description": "Restarts the controller software. Regulation pauses for a moment; the settings are kept.",
+      "fields": {
+        "config_entry_id": {
+          "name": "System",
+          "description": "The NGBS iCON system; can be left empty when only one is set up."
+        }
+      }
     }
   }
 }

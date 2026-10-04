@@ -1,5 +1,61 @@
 {
   "entity": {
+    "binary_sensor": {
+      "pump": {
+        "default": "mdi:pump-off",
+        "state": {
+          "on": "mdi:pump"
+        }
+      },
+      "regulation": {
+        "default": "mdi:power"
+      },
+      "output": {
+        "default": "mdi:valve-closed",
+        "state": {
+          "on": "mdi:valve-open"
+        }
+      },
+      "time_program": {
+        "default": "mdi:calendar-clock"
+      },
+      "eco_follows_master": {
+        "default": "mdi:leaf"
+      },
+      "heating_relay": {
+        "default": "mdi:fire-off",
+        "state": {
+          "on": "mdi:fire"
+        }
+      },
+      "cooling_relay": {
+        "default": "mdi:snowflake-off",
+        "state": {
+          "on": "mdi:snowflake"
+        }
+      },
+      "pump_relay": {
+        "default": "mdi:pump-off",
+        "state": {
+          "on": "mdi:pump"
+        }
+      },
+      "switched_output_relay": {
+        "default": "mdi:electric-switch"
+      },
+      "valve": {
+        "default": "mdi:valve-closed",
+        "state": {
+          "on": "mdi:valve-open"
+        }
+      },
+      "valve_room": {
+        "default": "mdi:valve-closed",
+        "state": {
+          "on": "mdi:valve-open"
+        }
+      }
+    },
     "climate": {
       "thermostat": {
         "state_attributes": {
@@ -11,6 +67,92 @@
           }
         }
       }
+    },
+    "lock": {
+      "keypad_lock": {
+        "default": "mdi:lock-open-variant",
+        "state": {
+          "locked": "mdi:lock"
+        }
+      }
+    },
+    "number": {
+      "heat_setpoint": {
+        "default": "mdi:thermometer-chevron-up"
+      },
+      "cool_setpoint": {
+        "default": "mdi:thermometer-chevron-down"
+      },
+      "eco_heat_setpoint": {
+        "default": "mdi:leaf"
+      },
+      "eco_cool_setpoint": {
+        "default": "mdi:leaf"
+      },
+      "setpoint_limit": {
+        "default": "mdi:arrow-expand-vertical"
+      },
+      "loop_b_offset_heat": {
+        "default": "mdi:thermometer-plus"
+      },
+      "loop_b_offset_cool": {
+        "default": "mdi:thermometer-minus"
+      }
+    },
+    "select": {
+      "system_mode": {
+        "default": "mdi:sun-snowflake-variant",
+        "state": {
+          "heating": "mdi:fire",
+          "cooling": "mdi:snowflake"
+        }
+      }
+    },
+    "sensor": {
+      "system_mode": {
+        "default": "mdi:sun-snowflake-variant",
+        "state": {
+          "heating": "mdi:fire",
+          "cooling": "mdi:snowflake"
+        }
+      },
+      "mixing_valve": {
+        "default": "mdi:valve"
+      },
+      "config_version": {
+        "default": "mdi:file-cog"
+      },
+      "water_temperature": {
+        "default": "mdi:coolant-temperature"
+      },
+      "dew_point": {
+        "default": "mdi:water-thermometer"
+      },
+      "uptime": {
+        "default": "mdi:timer-outline"
+      }
+    },
+    "switch": {
+      "eco": {
+        "default": "mdi:leaf-off",
+        "state": {
+          "on": "mdi:leaf"
+        }
+      },
+      "switched_output": {
+        "default": "mdi:electric-switch"
+      }
+    }
+  },
+  "services": {
+    "set_setpoints": {
+      "service": "mdi:thermostat"
+    },
+    "set_system_mode": {
+      "service": "mdi:sun-snowflake-variant"
+    },
+    "restart_controller": {
+      "service": "mdi:restart"
     }
   }
 }

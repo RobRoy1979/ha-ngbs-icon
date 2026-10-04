@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Mapping
 from typing import Any
 
 from homeassistant.components.climate import ClimateEntity
@@ -21,17 +22,28 @@ from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 from ._lib import pyngbsicon
 from .const import DOMAIN
 from .coordinator import IconConfigEntry, IconCoordinator
-from .entity import IconThermostatEntity
+from .entity import (
+    EntityCandidates,
+    IconThermostatEntity,
+    async_add_dynamic_entities,
+    thermostat_candidates,
+)
+from .issues import async_create_hc_switch_external_issue
+from .util import setpoint_range
 
 PARALLEL_UPDATES = 1  # the controller serves one request at a time
-
-# Absolute limits; a thermostat narrows them to its default setpoint ± its limit.
-_MIN_TEMP = 5.0
-_MAX_TEMP = 35.0
 
 _HVAC_MODES = {
     pyngbsicon.HeatCool.HEATING: HVACMode.HEAT,
     pyngbsicon.HeatCool.COOLING: HVACMode.COOL,
+}
+
+# Service field names of ngbs_icon.set_setpoints.
+SETPOINT_FIELDS: Mapping[str, pyngbsicon.SetpointKind] = {
+    "heating": pyngbsicon.SetpointKind.HEAT,
+    "cooling": pyngbsicon.SetpointKind.COOL,
+    "eco_heating": pyngbsicon.SetpointKind.ECO_HEAT,
+    "eco_cooling": pyngbsicon.SetpointKind.ECO_COOL,
 }
 
 
@@ -41,11 +53,11 @@ async def async_setup_entry(
     async_add_entities: AddConfigEntryEntitiesCallback,
 ) -> None:
     """Create a climate entity for every configured thermostat."""
-    coordinator = entry.runtime_data
-    async_add_entities(
-        IconClimate(coordinator, thermostat_id)
-        for thermostat_id in coordinator.data.configured_thermostats
-    )
+    async_add_dynamic_entities(entry, async_add_entities, _candidates)
+
+
+def _candidates(coordinator: IconCoordinator) -> EntityCandidates:
+    return thermostat_candidates(coordinator, ["climate"], IconClimate)
 
 
 class IconClimate(IconThermostatEntity, ClimateEntity):
@@ -65,9 +77,11 @@ class IconClimate(IconThermostatEntity, ClimateEntity):
         ClimateEntityFeature.TARGET_TEMPERATURE | ClimateEntityFeature.PRESET_MODE
     )
 
-    def __init__(self, coordinator: IconCoordinator, thermostat_id: str) -> None:
+    def __init__(
+        self, coordinator: IconCoordinator, thermostat_id: str, key: str = "climate"
+    ) -> None:
         """Create the entity."""
-        super().__init__(coordinator, thermostat_id, "climate")
+        super().__init__(coordinator, thermostat_id, key)
 
     @property
     def current_temperature(self) -> float | None:
@@ -121,17 +135,17 @@ class IconClimate(IconThermostatEntity, ClimateEntity):
         """Comfort or ECO."""
         return PRESET_ECO if self.thermostat.eco else PRESET_COMFORT
 
+    @property
+    def extra_state_attributes(self) -> dict[str, Any]:
+        """The dew point and the thermostat's address in the system."""
+        return {
+            "dew_point": self.thermostat.dew_point,
+            "thermostat_id": self.thermostat_id,
+        }
+
     def _range(self) -> tuple[float, float]:
         thermostat = self.thermostat
-        centre = self.coordinator.data.default_setpoints.get(
-            thermostat.active_setpoint_kind
-        )
-        if centre is None or thermostat.limit is None:
-            return _MIN_TEMP, _MAX_TEMP
-        return (
-            max(_MIN_TEMP, centre - thermostat.limit),
-            min(_MAX_TEMP, centre + thermostat.limit),
-        )
+        return setpoint_range(self.system, thermostat, thermostat.active_setpoint_kind)
 
     async def async_set_temperature(self, **kwargs: Any) -> None:
         """Change the setpoint in effect (and the mode first, when one is given)."""
@@ -156,10 +170,21 @@ class IconClimate(IconThermostatEntity, ClimateEntity):
         if hvac_mode == self.hvac_mode:
             return
         if hvac_mode not in self.hvac_modes:
+            master = self.system.hc_master_thermostat
+            if master is None:
+                async_create_hc_switch_external_issue(
+                    self.hass, self.coordinator.config_entry
+                )
+                raise ServiceValidationError(
+                    translation_domain=DOMAIN, translation_key="hc_switch_external"
+                )
+            thermostat = self.system.thermostats.get(master)
             raise ServiceValidationError(
                 translation_domain=DOMAIN,
                 translation_key="hc_switch_not_allowed",
-                translation_placeholders={"master": self._master_name()},
+                translation_placeholders={
+                    "master": thermostat.name if thermostat else master
+                },
             )
         mode = (
             pyngbsicon.HeatCool.COOLING
@@ -168,9 +193,36 @@ class IconClimate(IconThermostatEntity, ClimateEntity):
         )
         await self.coordinator.async_write(lambda client: client.set_hc_mode(mode))
 
-    def _master_name(self) -> str:
-        state = self.coordinator.data
-        master = state.hc_master_thermostat
-        if master is not None and master in state.thermostats:
-            return state.thermostats[master].name
-        return str(state.hc_master) if state.hc_master else "?"
+    async def async_set_setpoints(self, **fields: float) -> None:
+        """Write several setpoints in one request (ngbs_icon.set_setpoints)."""
+        values: dict[pyngbsicon.SetpointKind, float] = {}
+        for name, kind in SETPOINT_FIELDS.items():
+            if (value := fields.get(name)) is None:
+                continue
+            low, high = setpoint_range(self.system, self.thermostat, kind)
+            if not low <= value <= high:
+                raise ServiceValidationError(
+                    translation_domain=DOMAIN,
+                    translation_key="setpoint_out_of_range",
+                    translation_placeholders={
+                        "field": name,
+                        "value": str(value),
+                        "min": str(low),
+                        "max": str(high),
+                        "entity": self.entity_id,
+                    },
+                )
+            values[kind] = round(value * 2) / 2
+        if not values:
+            raise ServiceValidationError(
+                translation_domain=DOMAIN, translation_key="no_setpoint"
+            )
+        await self.coordinator.async_write(
+            lambda client: client.set_setpoints(
+                self.thermostat_id,
+                heat=values.get(pyngbsicon.SetpointKind.HEAT),
+                cool=values.get(pyngbsicon.SetpointKind.COOL),
+                eco_heat=values.get(pyngbsicon.SetpointKind.ECO_HEAT),
+                eco_cool=values.get(pyngbsicon.SetpointKind.ECO_COOL),
+            )
+        )
