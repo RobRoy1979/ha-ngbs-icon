@@ -55,8 +55,8 @@ Home Assistant 2026.9 or newer is required.
    `configuration.yaml`), create the folder `custom_components/ngbs_icon` and extract
    the zip **into** it, so that `custom_components/ngbs_icon/manifest.json` exists.
    Any of these works:
-   * **Studio Code Server** add-on: create the folder, drag the zip into it, then
-     right-click → *Extract*.
+   * **Studio Code Server** or **File editor** add-on: create the folder and upload
+     the files extracted on your computer.
    * **Samba share** add-on: open `\\homeassistant\config` from your computer and copy
      the extracted files into the folder.
    * **Terminal & SSH** add-on:
@@ -265,9 +265,10 @@ While the controller software starts, its placeholder values are not shown.
 * Thermostats clamp setpoints to the system default ± their limit (often ±10 °C); the
   allowed range is shown in Home Assistant.
 * DHCP discovery and following a changed address need Home Assistant to see the DHCP
-  traffic of your network. Some installations do not (the DHCP browser under
-  Settings → System → Network stays empty); there, add the controller by address, use
-  **Reconfigure** after an address change, or give the controller a fixed address.
+  traffic of your network. Some installations do not: the *DHCP discovery* page
+  (`/config/dhcp`, reachable from the DHCP integration under Settings → Devices &
+  services) stays empty. There, add the controller by address, use **Reconfigure**
+  after an address change, or give the controller a fixed address.
 * Only the local JSON protocol is used; Modbus TCP and the manufacturer's cloud are
   not.
 * Slave controllers and firmware older than 1079 are implemented from the protocol
