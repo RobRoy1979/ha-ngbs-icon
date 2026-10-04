@@ -8,9 +8,7 @@ rules:
   common-modules: done
   config-flow: done
   config-flow-test-coverage: done
-  dependency-transparency:
-    status: todo
-    comment: pyngbsicon is open source and bundled for now; it is published to PyPI from CI with the first release.
+  dependency-transparency: done
   docs-actions: done
   docs-conditions:
     status: exempt

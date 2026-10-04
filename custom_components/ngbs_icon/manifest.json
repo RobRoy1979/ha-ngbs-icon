@@ -39,6 +39,8 @@
     "pyngbsicon",
     "custom_components.ngbs_icon"
   ],
-  "requirements": [],
+  "requirements": [
+    "pyngbsicon==0.1.0"
+  ],
   "version": "1.0.0"
 }
