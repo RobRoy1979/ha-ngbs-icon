@@ -316,6 +316,26 @@ async def test_reconfigure(
     mock_client.assert_called_with("192.0.2.50", None)  # asked for its own SYSID
 
 
+async def test_reconfigure_sets_sysid_of_migrated_entry(hass: HomeAssistant) -> None:
+    """A migrated entry without a SYSID is repaired by reconfigure too, not only reauth."""
+    entry = MockConfigEntry(
+        domain=DOMAIN,
+        unique_id=None,
+        data={CONF_HOST: HOST, CONF_SYSID: "", CONF_MAC: None},
+        options={CONF_SCAN_INTERVAL: 30},
+        version=2,
+    )
+    entry.add_to_hass(hass)
+    result = await entry.start_reconfigure_flow(hass)
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"], {CONF_HOST: "192.0.2.50"}
+    )
+    assert result["type"] is FlowResultType.ABORT
+    assert result["reason"] == "reconfigure_successful"
+    assert entry.unique_id == SYSID
+    assert entry.data == {CONF_HOST: "192.0.2.50", CONF_SYSID: SYSID, CONF_MAC: MAC}
+
+
 async def test_reconfigure_old_firmware_uses_stored_sysid(
     hass: HomeAssistant, config_entry: MockConfigEntry, mock_client: MagicMock
 ) -> None:

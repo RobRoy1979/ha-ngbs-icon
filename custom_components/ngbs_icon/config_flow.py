@@ -233,11 +233,7 @@ class NgbsIconConfigFlow(ConfigFlow, domain=DOMAIN):
                     host, entry.data.get(CONF_SYSID), errors
                 )
             if state is not None:
-                await self.async_set_unique_id(state.sysid)
-                self._abort_if_unique_id_mismatch(reason="wrong_system")
-                return self.async_update_reload_and_abort(
-                    entry, data_updates={CONF_HOST: host, CONF_MAC: state.mac}
-                )
+                return await self._async_adopt(entry, state, {CONF_HOST: host})
         return self.async_show_form(
             step_id="reconfigure",
             data_schema=self.add_suggested_values_to_schema(
@@ -262,14 +258,7 @@ class NgbsIconConfigFlow(ConfigFlow, domain=DOMAIN):
                 entry.data[CONF_HOST], user_input[CONF_SYSID], errors
             )
             if state is not None:
-                if entry.unique_id and _SYSID_RE.fullmatch(entry.unique_id):
-                    await self.async_set_unique_id(state.sysid)
-                    self._abort_if_unique_id_mismatch(reason="wrong_system")
-                return self.async_update_reload_and_abort(
-                    entry,
-                    unique_id=state.sysid,
-                    data_updates={CONF_SYSID: state.sysid, CONF_MAC: state.mac},
-                )
+                return await self._async_adopt(entry, state, {})
         return self.async_show_form(
             step_id="reauth_confirm",
             data_schema=vol.Schema({vol.Required(CONF_SYSID): TextSelector()}),
@@ -278,6 +267,26 @@ class NgbsIconConfigFlow(ConfigFlow, domain=DOMAIN):
         )
 
     # -- helpers -----------------------------------------------------------
+
+    async def _async_adopt(
+        self,
+        entry: IconConfigEntry,
+        state: pyngbsicon.IconSystem,
+        updates: dict[str, Any],
+    ) -> ConfigFlowResult:
+        """Finish reauth/reconfigure with the system that answered.
+
+        An entry migrated without a SYSID has no system-based unique ID yet; it
+        adopts the one read now. An entry that has one must stay the same system.
+        """
+        if entry.unique_id and _SYSID_RE.fullmatch(entry.unique_id):
+            await self.async_set_unique_id(state.sysid)
+            self._abort_if_unique_id_mismatch(reason="wrong_system")
+        return self.async_update_reload_and_abort(
+            entry,
+            unique_id=state.sysid,
+            data_updates={**updates, CONF_SYSID: state.sysid, CONF_MAC: state.mac},
+        )
 
     def _use(self, found: pyngbsicon.DiscoveredIcon) -> None:
         self._host = found.host
