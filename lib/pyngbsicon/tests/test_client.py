@@ -244,6 +244,7 @@ async def test_ignored_system_write_is_rejected(
 async def test_settle_gives_up_after_timeout(
     server: FakeIconServer, controller: SimulatedController
 ) -> None:
+    """A value that never settles stops the wait at the timeout, not forever."""
     flip = {"value": 0}
     original = controller.handle
 
@@ -255,11 +256,15 @@ async def test_settle_gives_up_after_timeout(
         return answer
 
     server.handler = flapping
-    client = make_client(server, settle_timeout=0.1)
-    # The value never settles; the client stops waiting and judges the last state.
-    with contextlib.suppress(IconRejectedError):
-        state = await client.set_lock("1.5", True)
-        assert state.thermostats["1.5"].locked
+    client = make_client(server, settle_timeout=0.2, settle_poll_interval=0.02)
+    loop = asyncio.get_running_loop()
+    started = loop.time()
+    with contextlib.suppress(
+        IconRejectedError
+    ):  # the last sample may show either value
+        await client.set_lock("1.5", True)
+    assert 0.2 <= loop.time() - started < 1.0
+    assert kinds(server).count("poll") >= 5  # kept polling until the timeout
 
 
 async def test_writes_are_serialised(server: FakeIconServer) -> None:

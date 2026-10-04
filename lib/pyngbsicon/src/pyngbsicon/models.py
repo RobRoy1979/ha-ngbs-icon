@@ -177,7 +177,8 @@ class Relay:
 
     controller: int
     index: int
-    """0 is the heating changeover output, 9 the cooling one, 1-8 the valve outputs."""
+    """0-9; in the factory configuration 0 is the heating changeover output, 9 the
+    cooling one and 1-8 the valve outputs - see ``kind`` for the actual role."""
     name: str
     """The name configured in the controller (``FUNC``), e.g. ``R1.3`` or ``R1.HEAT``."""
     kind: RelayKind
