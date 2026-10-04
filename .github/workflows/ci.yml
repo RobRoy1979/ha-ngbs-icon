@@ -53,10 +53,10 @@ jobs:
           pip show syrupy pytest | grep -E "^(Name|Version)"
           pytest tests/test_lock.py -vv -p no:cacheprovider --snapshot-details 2>&1 | tail -60 || true
           python - <<'PY'
-          from syrupy.extensions.amber import AmberSnapshotExtension
-          ext = AmberSnapshotExtension()
-          col = ext.read_snapshot_collection("tests/snapshots/test_lock.ambr")
-          print("parsed names:", [s.name for s in col][:3], "count", len(list(col)))
+          from pytest_homeassistant_custom_component.syrupy import HomeAssistantSnapshotExtension as E
+          col = E().read_snapshot_collection("tests/snapshots/test_lock.ambr")
+          print("HA ext parsed:", len(list(col)), "tainted:", col.tainted, [(s.name, s.tainted) for s in list(col)[:2]])
+          print("serializer VERSION:", E.serializer_class.VERSION, "ext VERSION:", E.VERSION)
           PY
       - run: pytest --cov --cov-report=xml --cov-report=term-missing
       - uses: codecov/codecov-action@v5
