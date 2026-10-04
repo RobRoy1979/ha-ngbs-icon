@@ -1,0 +1,133 @@
+{
+  "config": {
+    "flow_title": "{host}",
+    "progress": {
+      "scanning": "Searching your network for iCON controllers. This takes a few seconds."
+    },
+    "step": {
+      "select": {
+        "title": "Choose a controller",
+        "description": "Several iCON controllers were found on your network.",
+        "data": {
+          "host": "Controller"
+        },
+        "data_description": {
+          "host": "The address and the end of the system ID help you tell them apart."
+        }
+      },
+      "confirm": {
+        "title": "Add {name}",
+        "description": "iCON controller at {host}: firmware {firmware}, {thermostats} thermostats.",
+        "data": {
+          "sysid": "System ID"
+        },
+        "data_description": {
+          "sysid": "The controller's firmware is too old to reveal it. It is the number on the iCON PASS card or on the controller's label."
+        }
+      },
+      "manual": {
+        "title": "Enter the controller",
+        "description": "No controller was found automatically. Its address is shown in the thermostat service menu (INTERNET STATUS) and on your router.",
+        "data": {
+          "host": "Host",
+          "sysid": "System ID"
+        },
+        "data_description": {
+          "host": "IP address or host name of the iCON master controller.",
+          "sysid": "Only needed for firmware older than 1079: the number on the iCON PASS card or on the controller's label."
+        }
+      },
+      "reconfigure": {
+        "title": "Change the controller's address",
+        "data": {
+          "host": "Host"
+        },
+        "data_description": {
+          "host": "New IP address or host name of the same controller."
+        }
+      },
+      "reauth_confirm": {
+        "title": "Enter the system ID",
+        "description": "The controller at {host} did not accept the stored system ID.",
+        "data": {
+          "sysid": "System ID"
+        },
+        "data_description": {
+          "sysid": "The number on the iCON PASS card or on the controller's label."
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Could not reach the controller on TCP port 7992. Check that it is powered and on the same network as Home Assistant, and that no firewall blocks the port.",
+      "invalid_sysid": "The controller does not accept this system ID.",
+      "sysid_required": "This controller runs firmware older than 1079 and does not reveal its system ID. Enter it as well.",
+      "not_icon": "The device answered, but it is not an NGBS iCON controller.",
+      "unknown": "Unexpected error. The Home Assistant log has the details."
+    },
+    "abort": {
+      "already_configured": "This iCON system is already set up.",
+      "already_in_progress": "This iCON system is already being set up.",
+      "not_icon": "The device is not an NGBS iCON controller.",
+      "reauth_successful": "The system ID was updated.",
+      "reconfigure_successful": "The address was updated.",
+      "wrong_system": "This address belongs to a different iCON system. Add it as a new integration instead."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Options",
+        "data": {
+          "scan_interval": "Update interval"
+        },
+        "data_description": {
+          "scan_interval": "How often the controller is read, in seconds. Changes made in Home Assistant appear at once regardless."
+        }
+      }
+    }
+  },
+  "selector": {
+    "controller": {
+      "options": {
+        "manual": "Enter an address manually"
+      }
+    }
+  },
+  "entity": {
+    "climate": {
+      "thermostat": {
+        "state_attributes": {
+          "preset_mode": {
+            "state": {
+              "comfort": "Comfort",
+              "eco": "Eco"
+            }
+          }
+        }
+      }
+    }
+  },
+  "exceptions": {
+    "auth_failed": {
+      "message": "The controller rejected the system ID."
+    },
+    "sysid_missing": {
+      "message": "The system ID of the controller is not known yet."
+    },
+    "update_failed": {
+      "message": "Could not read the controller: {error}"
+    },
+    "write_failed": {
+      "message": "Could not change the setting: {error}"
+    },
+    "value_rejected": {
+      "message": "The thermostat did not accept {value}; it is outside the range allowed for it."
+    },
+    "invalid_value": {
+      "message": "Invalid value: {error}"
+    },
+    "hc_switch_not_allowed": {
+      "message": "Heating and cooling can only be switched on the H/C master thermostat ({master})."
+    }
+  }
+}

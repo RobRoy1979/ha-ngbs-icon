@@ -72,8 +72,7 @@ show_error_codes = true
 local_partial_types = true
 enable_error_code = ["ignore-without-code", "redundant-self", "truthy-iterable"]
 mypy_path = "lib/pyngbsicon/src"
-# custom_components.ngbs_icon is added in phase 2, when the integration package exists.
-packages = ["pyngbsicon"]
+packages = ["custom_components.ngbs_icon", "pyngbsicon"]
 exclude = ["custom_components/ngbs_icon/_vendor"]
 
 [[tool.mypy.overrides]]

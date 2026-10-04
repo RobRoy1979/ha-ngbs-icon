@@ -318,7 +318,11 @@ async def main() -> int:
             return code
 
         print("Restarting Home Assistant Core ...")
-        await ha.supervisor("/core/restart", method="post")
+        try:
+            await ha.supervisor("/core/restart", method="post")
+        except (aiohttp.WSMessageTypeError, aiohttp.ClientConnectionError):
+            # Core may close the connection before it answers the restart request.
+            print("  (the connection closed as Core went down)")
         await ha.close()
         await ha.wait_until_running()
         await ha.connect()

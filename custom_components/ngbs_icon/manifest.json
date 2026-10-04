@@ -1,0 +1,23 @@
+{
+  "domain": "ngbs_icon",
+  "name": "NGBS iCON",
+  "codeowners": ["@robroy1979"],
+  "config_flow": true,
+  "dependencies": ["network"],
+  "dhcp": [
+    { "macaddress": "E4956E5*" },
+    { "macaddress": "0050C2FDA*" },
+    { "macaddress": "0050C2F27*" },
+    { "macaddress": "0050C2DE7*" },
+    { "macaddress": "40D8550D2*" },
+    { "macaddress": "6655440*" },
+    { "registered_devices": true }
+  ],
+  "documentation": "https://github.com/robroy1979/ha-ngbs-icon",
+  "integration_type": "hub",
+  "iot_class": "local_polling",
+  "issue_tracker": "https://github.com/robroy1979/ha-ngbs-icon/issues",
+  "loggers": ["pyngbsicon", "custom_components.ngbs_icon"],
+  "requirements": [],
+  "version": "0.1.0"
+}

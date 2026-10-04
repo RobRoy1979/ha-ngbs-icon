@@ -1,0 +1,133 @@
+{
+  "config": {
+    "flow_title": "{host}",
+    "progress": {
+      "scanning": "iCON vezérlők keresése a hálózaton. Ez néhány másodpercig tart."
+    },
+    "step": {
+      "select": {
+        "title": "Vezérlő kiválasztása",
+        "description": "Több iCON vezérlő is van a hálózaton.",
+        "data": {
+          "host": "Vezérlő"
+        },
+        "data_description": {
+          "host": "A cím és a rendszerazonosító vége alapján különböztethetők meg."
+        }
+      },
+      "confirm": {
+        "title": "{name} hozzáadása",
+        "description": "iCON vezérlő itt: {host}; firmware {firmware}, {thermostats} termosztát.",
+        "data": {
+          "sysid": "Rendszerazonosító (SYSID)"
+        },
+        "data_description": {
+          "sysid": "A vezérlő firmware-e túl régi ahhoz, hogy elárulja. Az iCON PASS kártyán vagy a vezérlő címkéjén lévő szám."
+        }
+      },
+      "manual": {
+        "title": "A vezérlő megadása",
+        "description": "Automatikusan nem találtunk vezérlőt. A címe a termosztát szervizmenüjében (INTERNET STATUS) és a routerben látható.",
+        "data": {
+          "host": "Cím",
+          "sysid": "Rendszerazonosító (SYSID)"
+        },
+        "data_description": {
+          "host": "Az iCON mestervezérlő IP-címe vagy hosztneve.",
+          "sysid": "Csak 1079-nél régebbi firmware esetén kell: az iCON PASS kártyán vagy a vezérlő címkéjén lévő szám."
+        }
+      },
+      "reconfigure": {
+        "title": "A vezérlő címének módosítása",
+        "data": {
+          "host": "Cím"
+        },
+        "data_description": {
+          "host": "Ugyanannak a vezérlőnek az új IP-címe vagy hosztneve."
+        }
+      },
+      "reauth_confirm": {
+        "title": "Rendszerazonosító megadása",
+        "description": "A(z) {host} címen lévő vezérlő nem fogadta el a tárolt rendszerazonosítót.",
+        "data": {
+          "sysid": "Rendszerazonosító (SYSID)"
+        },
+        "data_description": {
+          "sysid": "Az iCON PASS kártyán vagy a vezérlő címkéjén lévő szám."
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "A vezérlő nem érhető el a 7992-es TCP-porton. Ellenőrizd, hogy be van-e kapcsolva, ugyanazon a hálózaton van-e, mint a Home Assistant, és hogy tűzfal nem tiltja-e a portot.",
+      "invalid_sysid": "A vezérlő nem fogadja el ezt a rendszerazonosítót.",
+      "sysid_required": "A vezérlő firmware-e 1079-nél régebbi, és nem árulja el a rendszerazonosítóját. Add meg azt is.",
+      "not_icon": "Az eszköz válaszolt, de nem NGBS iCON vezérlő.",
+      "unknown": "Váratlan hiba. A részletek a Home Assistant naplójában."
+    },
+    "abort": {
+      "already_configured": "Ez az iCON rendszer már be van állítva.",
+      "already_in_progress": "Ennek az iCON rendszernek a beállítása már folyamatban van.",
+      "not_icon": "Az eszköz nem NGBS iCON vezérlő.",
+      "reauth_successful": "A rendszerazonosító frissítve.",
+      "reconfigure_successful": "A cím frissítve.",
+      "wrong_system": "Ez a cím egy másik iCON rendszeré. Vedd fel új integrációként."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Beállítások",
+        "data": {
+          "scan_interval": "Frissítési időköz"
+        },
+        "data_description": {
+          "scan_interval": "Milyen gyakran olvassuk a vezérlőt, másodpercben. A Home Assistantban végzett módosítások ettől függetlenül azonnal megjelennek."
+        }
+      }
+    }
+  },
+  "selector": {
+    "controller": {
+      "options": {
+        "manual": "Cím megadása kézzel"
+      }
+    }
+  },
+  "entity": {
+    "climate": {
+      "thermostat": {
+        "state_attributes": {
+          "preset_mode": {
+            "state": {
+              "comfort": "Komfort",
+              "eco": "Eco"
+            }
+          }
+        }
+      }
+    }
+  },
+  "exceptions": {
+    "auth_failed": {
+      "message": "A vezérlő nem fogadta el a rendszerazonosítót."
+    },
+    "sysid_missing": {
+      "message": "A vezérlő rendszerazonosítója még nem ismert."
+    },
+    "update_failed": {
+      "message": "A vezérlő nem olvasható: {error}"
+    },
+    "write_failed": {
+      "message": "A beállítás nem módosítható: {error}"
+    },
+    "value_rejected": {
+      "message": "A termosztát nem fogadta el ezt az értéket: {value}; kívül esik a számára megengedett tartományon."
+    },
+    "invalid_value": {
+      "message": "Érvénytelen érték: {error}"
+    },
+    "hc_switch_not_allowed": {
+      "message": "Fűtés és hűtés között csak a H/C-mester termosztáton lehet váltani ({master})."
+    }
+  }
+}

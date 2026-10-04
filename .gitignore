@@ -20,6 +20,9 @@ htmlcov/
 # Development Home Assistant instance (created by scripts/dev-ha.sh)
 config/
 
+# Bundled library copy: built by scripts/package.py, bind-mounted in the development instance
+custom_components/ngbs_icon/_vendor/
+
 # Unredacted controller captures - they contain the real SYSID, MAC and IP addresses
 lib/pyngbsicon/tests/fixtures/raw/
 
@@ -33,3 +36,6 @@ lib/pyngbsicon/tests/fixtures/raw/
 
 # Manufacturer documents: copyrighted, download them from the links in docs/reference/README.md
 docs/reference/*.pdf
+
+# Local helpers for driving Home Assistant instances during development
+.devtools/

@@ -32,5 +32,7 @@ services:
     volumes:
       - ./config:/config
       - ./custom_components:/config/custom_components
+      # The library as the integration's bundled copy (scripts/package.py does the same for releases).
+      - ./lib/pyngbsicon/src/pyngbsicon:/config/custom_components/ngbs_icon/_vendor/pyngbsicon:ro
       - /etc/localtime:/etc/localtime:ro
     restart: unless-stopped
