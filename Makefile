@@ -46,7 +46,7 @@ fixtures: ## Capture and anonymise controller responses into tests/fixtures (nee
 	python3 scripts/record_fixtures.py
 
 .PHONY: ha-up
-ha-up: ## Start the development Home Assistant (http://localhost:8125)
+ha-up: ## Start the development Home Assistant (http://localhost:8123)
 	./scripts/dev-ha.sh up
 
 .PHONY: ha-down

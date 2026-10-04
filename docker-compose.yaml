@@ -2,7 +2,7 @@
 #
 #   docker compose run --rm test            # ruff + mypy + pytest (make check)
 #   docker compose run --rm test make test  # a single target
-#   docker compose up -d ha                 # development Home Assistant on http://localhost:8125
+#   docker compose up -d ha                 # development Home Assistant on http://localhost:8123
 #
 # The development Home Assistant uses the host network so DHCP discovery and the
 # active network scan can see the real controller.

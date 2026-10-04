@@ -160,8 +160,10 @@ result does not depend on a mode change racing the write.
 | `ICON<n>.RELAY.R0…R9` | relay matrix: `FUNC` (name, e.g. `R1.HEAT`, `R1.COOL`, `R1.3`, `S1.8`), `Ton`/`Toff`, `NEG`, `HEAT`/`COOL` participation, `OR` (thermostats `A1.x` or inputs `I1.x` that switch it on) |
 | `ICON<n>.STATUS` | `WTEMP`, `ETEMP`, `HC`, `CE`, `ON` (digital inputs), `POWER` (supply V), `THPWR` (thermostat bus V), `AO` (mixing valve %), `R0…R9` (**physical** relay states) |
 
-`R0` is the heating changeover relay, `R9` the cooling changeover relay, `R1…R8` are
-the valve outputs (by default relay *n* follows thermostat *n*).
+In the factory configuration `R0` is the heating changeover relay (`R<c>.HEAT`), `R9`
+the cooling changeover relay (`R<c>.COOL`) and `R1…R8` the valve outputs, relay *n*
+following thermostat *n* (`R<c>.<n>`). Installers may change this freely in the
+relay matrix, so always read the role from `FUNC`.
 
 `TPR` holds the weekly time programs (`HEAT` / `COOL` → per thermostat `{"EN": 0/1, …}`),
 `EVENTLOG` the controller's event log (`LEVEL`, `LOG`).

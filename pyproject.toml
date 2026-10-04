@@ -3,9 +3,16 @@
 # the protocol library in lib/pyngbsicon (published to PyPI as "pyngbsicon").
 
 [tool.ruff]
+# The integration runs on Home Assistant 2026.9+ (Python 3.14); the library and the
+# developer scripts must keep working on Python 3.12, so they get their own target.
 target-version = "py314"
 line-length = 88
 extend-exclude = ["config", "tests/fixtures", "custom_components/ngbs_icon/_vendor"]
+
+[tool.ruff.per-file-target-version]
+"lib/**" = "py312"
+"scripts/**" = "py312"
+"tests/**" = "py312"
 
 [tool.ruff.lint]
 # Mirrors the Home Assistant core rule set so the integration reads like core code.

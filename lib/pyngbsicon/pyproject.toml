@@ -8,7 +8,7 @@ dynamic = ["version"]
 description = "Asynchronous client for NGBS iCON heating/cooling controllers (local JSON/TCP protocol)"
 readme = "README.md"
 requires-python = ">=3.12"
-license = "LicenseRef-BUSL-1.1"
+license = "BUSL-1.1"
 license-files = ["LICENSE"]
 authors = [{ name = "RobRoy1979" }]
 keywords = ["ngbs", "icon", "thermostat", "heating", "cooling", "home-automation", "home-assistant"]

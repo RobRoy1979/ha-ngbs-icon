@@ -1,5 +1,9 @@
 #!/usr/bin/env bash
-# Development Home Assistant (Docker, host network, http://localhost:8125).
+# Development Home Assistant (Docker, host network, http://localhost:8123).
+#
+# It uses the default port on purpose: a custom `http: server_port` is a trial
+# configuration in Home Assistant 2026.9+, which reverts (and restarts) after five
+# minutes unless it is confirmed over the WebSocket API.
 #
 #   scripts/dev-ha.sh up      create config/ on first run, start, finish onboarding
 #   scripts/dev-ha.sh down    stop (config/ is kept)
@@ -12,7 +16,6 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 
 CONFIG_DIR=config
-PORT=8125
 
 ensure_env() {
   [[ -f .env ]] || cp .env.example .env
@@ -52,9 +55,6 @@ system_health:
 diagnostics:
 repairs:
 
-http:
-  server_port: ${PORT}
-
 logger:
   default: info
   logs:
@@ -72,7 +72,7 @@ sys.path.insert(0, "scripts")
 from devenv import load_env
 
 env = load_env()
-base = env.get("DEV_HA_URL", "http://localhost:8125").rstrip("/")
+base = env.get("DEV_HA_URL", "http://localhost:8123").rstrip("/")
 client_id = base + "/"
 
 def call(method, path, data=None, token=None, form=False):

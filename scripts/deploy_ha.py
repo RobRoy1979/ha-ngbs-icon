@@ -130,7 +130,7 @@ class HomeAssistant:
                         and (await response.json()).get("state") == "RUNNING"
                     ):
                         return
-            except aiohttp.ClientError, TimeoutError:
+            except (aiohttp.ClientError, TimeoutError):
                 pass
             await asyncio.sleep(3)
         raise SystemExit("Home Assistant did not come back within 5 minutes")

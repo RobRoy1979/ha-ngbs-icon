@@ -12,7 +12,7 @@ runs in a container.
 cp .env.example .env    # only needed for the scripts that talk to real devices
 make build              # build the toolchain image (once)
 make check              # lint + type check + tests, exactly as CI runs them
-make ha-up              # development Home Assistant on http://localhost:8125
+make ha-up              # development Home Assistant on http://localhost:8123
 ```
 
 No `make` on your machine? Run the targets in the toolchain container instead:
