@@ -11,6 +11,7 @@ from homeassistant.components.select import (
 )
 from homeassistant.const import ATTR_ENTITY_ID, STATE_UNAVAILABLE, Platform
 from homeassistant.core import HomeAssistant
+from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers import entity_registry as er
 import pytest
 from pytest_homeassistant_custom_component.common import (
@@ -81,3 +82,22 @@ async def test_changeover_moves_to_an_input(
     await hass.async_block_till_done()
     state = hass.states.get(MODE)
     assert state is not None and state.state == STATE_UNAVAILABLE
+
+
+async def test_rejected_mode_change(
+    hass: HomeAssistant, config_entry: MockConfigEntry, mock_client: MagicMock
+) -> None:
+    """A rejected system write is reported as such, not as a setpoint out of range."""
+    await setup_integration(hass, config_entry)
+    mock_client.return_value.set_hc_mode.side_effect = pyngbsicon.IconRejectedError(
+        "system", "HC", 0, 1
+    )
+    with pytest.raises(HomeAssistantError) as err:
+        await hass.services.async_call(
+            SELECT_DOMAIN,
+            SERVICE_SELECT_OPTION,
+            {ATTR_ENTITY_ID: MODE, ATTR_OPTION: "heating"},
+            blocking=True,
+        )
+    assert err.value.translation_key == "write_rejected"
+    assert err.value.translation_placeholders == {"field": "HC", "value": "0"}

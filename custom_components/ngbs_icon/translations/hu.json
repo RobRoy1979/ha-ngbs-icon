@@ -295,6 +295,9 @@
     },
     "no_setpoint": {
       "message": "Adj meg legalább egy alapjelet."
+    },
+    "write_rejected": {
+      "message": "A vezérlő nem vette át a módosítást ({field}: {value}). Ha a fűtés/hűtés váltását külső bemenet végzi, azzal válts."
     }
   },
   "issues": {

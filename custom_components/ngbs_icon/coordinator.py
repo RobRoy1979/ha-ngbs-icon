@@ -21,6 +21,8 @@ from homeassistant.util import dt as dt_util
 from ._lib import pyngbsicon
 from .const import DEFAULT_SCAN_INTERVAL, DOMAIN, LOGGER
 
+_SETPOINT_FIELDS = frozenset(kind.field for kind in pyngbsicon.SetpointKind)
+
 type IconConfigEntry = ConfigEntry[IconCoordinator]
 type IconWrite = Callable[[pyngbsicon.IconClient], Awaitable[pyngbsicon.IconSystem]]
 
@@ -132,10 +134,21 @@ class IconCoordinator(DataUpdateCoordinator[pyngbsicon.IconSystem]):
                 translation_placeholders={"error": str(err)},
             ) from err
         except pyngbsicon.IconRejectedError as err:
+            # A setpoint is rejected by the thermostat (range); anything else (system
+            # mode, ECO, a service setting) by the controller.
+            if err.field in _SETPOINT_FIELDS:
+                raise HomeAssistantError(
+                    translation_domain=DOMAIN,
+                    translation_key="value_rejected",
+                    translation_placeholders={"value": str(err.requested)},
+                ) from err
             raise HomeAssistantError(
                 translation_domain=DOMAIN,
-                translation_key="value_rejected",
-                translation_placeholders={"value": str(err.requested)},
+                translation_key="write_rejected",
+                translation_placeholders={
+                    "field": str(err.field),
+                    "value": str(err.requested),
+                },
             ) from err
         except pyngbsicon.IconAuthenticationError as err:
             self.config_entry.async_start_reauth(self.hass)

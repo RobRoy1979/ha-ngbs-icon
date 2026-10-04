@@ -295,6 +295,9 @@
     },
     "no_setpoint": {
       "message": "Give at least one setpoint."
+    },
+    "write_rejected": {
+      "message": "The controller did not apply the change ({field}: {value}). If heating/cooling is switched by an external input, use that switch."
     }
   },
   "issues": {
