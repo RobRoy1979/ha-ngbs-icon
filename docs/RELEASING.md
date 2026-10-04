@@ -38,8 +38,9 @@ that fails — even though the release zip also bundles a copy of the library.
 
 ## After the first release
 
-* HACS: users can add the repository as a custom repository right away. For the
-  default HACS list, open a pull request at `hacs/default` once the repository is
-  public and the HACS action in CI is green.
+* HACS: users add the repository as a custom repository. The default HACS list
+  requires a license GitHub can identify, which is not the case for the Business
+  Source License, so the integration stays a custom repository (the HACS check in CI
+  ignores the license validation for that reason).
 * Brand images ship with the integration (`custom_components/ngbs_icon/brand/`), so a
   pull request to `home-assistant/brands` is optional.

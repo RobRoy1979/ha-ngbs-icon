@@ -92,3 +92,6 @@ jobs:
         if: steps.manifest.outputs.present == 'true'
         with:
           category: integration
+          # GitHub cannot identify the Business Source License, which HACS requires
+          # only for its default repository list; custom repositories work without it.
+          ignore: license
