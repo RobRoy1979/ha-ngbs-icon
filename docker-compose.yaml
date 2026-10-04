@@ -1,0 +1,36 @@
+# Development environment.
+#
+#   docker compose run --rm test            # ruff + mypy + pytest (make check)
+#   docker compose run --rm test make test  # a single target
+#   docker compose up -d ha                 # development Home Assistant on http://localhost:8125
+#
+# The development Home Assistant uses the host network so DHCP discovery and the
+# active network scan can see the real controller.
+
+services:
+  test:
+    build:
+      context: .
+      dockerfile: .docker/test.Dockerfile
+    image: ngbs-icon-test
+    working_dir: /workspace
+    volumes:
+      - .:/workspace
+    environment:
+      PYTHONPATH: /workspace:/workspace/lib/pyngbsicon/src
+      HOME: /tmp
+      IN_CONTAINER: "1"
+    user: "${UID:-1000}:${GID:-1000}"
+
+  ha:
+    image: ghcr.io/home-assistant/home-assistant:2026.9.3
+    container_name: ngbs-icon-dev-ha
+    network_mode: host
+    privileged: false
+    environment:
+      TZ: Europe/Budapest
+    volumes:
+      - ./config:/config
+      - ./custom_components:/config/custom_components
+      - /etc/localtime:/etc/localtime:ro
+    restart: unless-stopped

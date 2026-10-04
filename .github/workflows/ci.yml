@@ -1,0 +1,92 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lint:
+    name: Lint (ruff)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: astral-sh/ruff-action@v3
+        with:
+          version: "0.16.10"
+      - run: ruff format --check .
+
+  secrets:
+    name: No real installation data
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.14"
+      - run: python scripts/check_no_secrets.py --all
+
+  test:
+    name: Type check and tests (Home Assistant)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.14"
+          cache: pip
+          cache-dependency-path: requirements_dev.txt
+      - run: pip install -r requirements_dev.txt
+      - run: mypy
+      - run: pytest --cov --cov-report=xml --cov-report=term-missing
+      - uses: codecov/codecov-action@v5
+        if: always()
+        with:
+          files: coverage.xml
+          fail_ci_if_error: false
+
+  library:
+    name: pyngbsicon on Python ${{ matrix.python }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ["3.12", "3.13", "3.14"]
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: ${{ matrix.python }}
+      - run: pip install pytest pytest-asyncio pytest-timeout ./lib/pyngbsicon
+      # Run outside the repository configuration so the Home Assistant plugin is not required.
+      - run: pytest lib/pyngbsicon/tests -c /dev/null -q --asyncio-mode=auto --import-mode=importlib -p no:cacheprovider
+
+  hassfest:
+    name: hassfest
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - id: manifest
+        run: echo "present=$([ -f custom_components/ngbs_icon/manifest.json ] && echo true || echo false)" >> "$GITHUB_OUTPUT"
+      - uses: home-assistant/actions/hassfest@master
+        if: steps.manifest.outputs.present == 'true'
+
+  hacs:
+    name: HACS validation
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - id: manifest
+        run: echo "present=$([ -f custom_components/ngbs_icon/manifest.json ] && echo true || echo false)" >> "$GITHUB_OUTPUT"
+      - uses: hacs/action@main
+        if: steps.manifest.outputs.present == 'true'
+        with:
+          category: integration

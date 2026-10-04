@@ -1,0 +1,5 @@
+*
+!requirements_dev.txt
+!lib/pyngbsicon/pyproject.toml
+!lib/pyngbsicon/README.md
+!lib/pyngbsicon/LICENSE

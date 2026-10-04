@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <title>NGBS iCON integration icon</title>
+  <!-- Thermostat face -->
+  <rect x="16" y="16" width="480" height="480" rx="108" fill="#22303C"/>
+  <!-- Gauge: heating half (left) and cooling half (right), open at the bottom -->
+  <g fill="none" stroke-width="44" stroke-linecap="round">
+    <path d="M 127.8 354 A 148 148 0 0 1 225.2 135.2" stroke="#FF7A3D"/>
+    <path d="M 286.8 135.2 A 148 148 0 0 1 384.2 354" stroke="#3AA7FF"/>
+  </g>
+  <!-- "i" for iCON -->
+  <g fill="#FFFFFF">
+    <circle cx="256" cy="222" r="27"/>
+    <rect x="233" y="268" width="46" height="108" rx="23"/>
+  </g>
+</svg>

@@ -1,0 +1,58 @@
+name: Release
+
+# v1.2.3      -> GitHub Release with ngbs_icon.zip (Home Assistant integration)
+# lib-v0.4.0  -> pyngbsicon published to PyPI (trusted publishing, environment "pypi")
+
+on:
+  push:
+    tags: ["v*", "lib-v*"]
+
+permissions:
+  contents: read
+
+jobs:
+  integration:
+    if: startsWith(github.ref_name, 'v')
+    name: Integration release
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.14"
+      - name: Check that the tag matches manifest.json
+        run: |
+          version="$(python -c 'import json; print(json.load(open("custom_components/ngbs_icon/manifest.json"))["version"])')"
+          [ "v${version}" = "${GITHUB_REF_NAME}" ] || { echo "manifest.json has ${version}, tag is ${GITHUB_REF_NAME}"; exit 1; }
+      - name: Build ngbs_icon.zip
+        run: python scripts/package.py
+      - name: Release notes from CHANGELOG.md
+        run: |
+          version="${GITHUB_REF_NAME#v}"
+          awk -v v="$version" '$0 ~ "^## \\[" v "\\]" {found=1; next} found && /^## \[/ {exit} found {print}' CHANGELOG.md > notes.md
+          [ -s notes.md ] || { echo "No CHANGELOG.md section for ${version}"; exit 1; }
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release create "${GITHUB_REF_NAME}" dist/ngbs_icon.zip --title "${GITHUB_REF_NAME}" --notes-file notes.md
+
+  library:
+    if: startsWith(github.ref_name, 'lib-v')
+    name: pyngbsicon to PyPI
+    runs-on: ubuntu-latest
+    environment: pypi
+    permissions:
+      id-token: write
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.14"
+      - name: Check that the tag matches the library version
+        run: |
+          version="$(python -c 'import re,pathlib; print(re.search(r"__version__ = \"(.+?)\"", pathlib.Path("lib/pyngbsicon/src/pyngbsicon/__init__.py").read_text())[1])')"
+          [ "lib-v${version}" = "${GITHUB_REF_NAME}" ] || { echo "pyngbsicon is ${version}, tag is ${GITHUB_REF_NAME}"; exit 1; }
+      - run: pip install build && python -m build lib/pyngbsicon --outdir dist
+      - uses: pypa/gh-action-pypi-publish@release/v1

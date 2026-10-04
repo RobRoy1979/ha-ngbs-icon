@@ -1,0 +1,25 @@
+repos:
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.16.10
+    hooks:
+      - id: ruff-check
+        args: [--fix]
+      - id: ruff-format
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v6.0.0
+    hooks:
+      - id: check-json
+        exclude: ^custom_components/ngbs_icon/translations/
+      - id: check-yaml
+      - id: end-of-file-fixer
+      - id: trailing-whitespace
+      - id: check-added-large-files
+        args: [--maxkb=600]
+  - repo: local
+    hooks:
+      - id: no-real-controller-data
+        name: Block real controller identifiers (SYSID / MAC / LAN IP)
+        entry: python3 scripts/check_no_secrets.py
+        language: system
+        pass_filenames: true
+        exclude: ^(docs/reference/|tests/fixtures/raw/)
