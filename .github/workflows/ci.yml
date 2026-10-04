@@ -50,13 +50,14 @@ jobs:
         run: |
           pwd; ls -la tests/snapshots | head; git ls-files tests/snapshots | wc -l
           head -c 200 tests/snapshots/test_lock.ambr | od -c | head -6
+          pip show syrupy pytest | grep -E "^(Name|Version)"
+          pytest tests/test_lock.py -vv -p no:cacheprovider --snapshot-details 2>&1 | tail -60 || true
           python - <<'PY'
-          import pathlib, syrupy, pytest_homeassistant_custom_component as p
-          f = pathlib.Path("tests/snapshots/test_lock.ambr")
-          print("exists", f.exists(), "size", f.stat().st_size, "resolved", f.resolve())
-          print("syrupy", syrupy.__version__, "phacc", p.__file__)
+          from syrupy.extensions.amber import AmberSnapshotExtension
+          ext = AmberSnapshotExtension()
+          col = ext.read_snapshot_collection("tests/snapshots/test_lock.ambr")
+          print("parsed names:", [s.name for s in col][:3], "count", len(list(col)))
           PY
-          pytest tests/test_lock.py -vv -p no:cacheprovider --snapshot-details 2>&1 | tail -40 || true
       - run: pytest --cov --cov-report=xml --cov-report=term-missing
       - uses: codecov/codecov-action@v5
         if: always()
