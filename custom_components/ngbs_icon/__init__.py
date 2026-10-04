@@ -148,8 +148,16 @@ def _thermostat_names(system: pyngbsicon.IconSystem) -> dict[str, str]:
 
 
 def _renamed(before: dict[str, str], after: dict[str, str]) -> bool:
-    """Whether a thermostat that existed before has another name now."""
-    return any(after.get(key, name) != name for key, name in before.items())
+    """Whether a thermostat that existed before has another name now.
+
+    An answer without a name yields the library's fallback name; that is not a
+    rename (it would reload the entry on every poll if a firmware left it out).
+    """
+    return any(
+        after.get(key, name) != name
+        and f"Thermostat {key}" not in (name, after.get(key))
+        for key, name in before.items()
+    )
 
 
 @callback

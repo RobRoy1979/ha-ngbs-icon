@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import dataclasses
+from typing import Any
 from unittest.mock import MagicMock, patch
 
 from homeassistant.config_entries import SOURCE_REAUTH, ConfigEntryState
@@ -457,6 +458,25 @@ async def test_renamed_thermostat_reloads(
         dp={"1.2": {"NAME": "Pantry"}, "1.6": {"ON": 1, "LIVE": 1}}
     )
     with patch.object(hass.config_entries, "async_schedule_reload") as reload:
+        await config_entry.runtime_data.async_refresh()
+        await hass.async_block_till_done()
+    reload.assert_not_called()
+
+
+async def test_missing_name_is_not_a_rename(
+    hass: HomeAssistant, config_entry: MockConfigEntry, mock_client: MagicMock
+) -> None:
+    """An answer without a room name must not reload the entry."""
+    await setup_integration(hass, config_entry)
+
+    def drop_name(raw: dict[str, Any]) -> None:
+        del raw["DP"]["1.2"]["NAME"]
+
+    mock_client.return_value.get_state.return_value = make_state(drop_name)
+    with patch.object(hass.config_entries, "async_schedule_reload") as reload:
+        await config_entry.runtime_data.async_refresh()
+        await hass.async_block_till_done()
+        mock_client.return_value.get_state.return_value = make_state()
         await config_entry.runtime_data.async_refresh()
         await hass.async_block_till_done()
     reload.assert_not_called()
