@@ -3,7 +3,9 @@
 from __future__ import annotations
 
 from importlib import resources
+from pathlib import Path
 import re
+import tomllib
 
 import pyngbsicon
 
@@ -22,9 +24,6 @@ def test_package_is_typed() -> None:
 
 def test_sdist_never_ships_raw_captures() -> None:
     """Unredacted captures stay out of the source distribution."""
-    import tomllib
-    from pathlib import Path
-
     config = tomllib.loads(
         (Path(__file__).parents[1] / "pyproject.toml").read_text(encoding="utf-8")
     )
