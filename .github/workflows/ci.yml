@@ -51,7 +51,7 @@ jobs:
           pwd; ls -la tests/snapshots | head; git ls-files tests/snapshots | wc -l
           head -c 200 tests/snapshots/test_lock.ambr | od -c | head -6
           pip show syrupy pytest | grep -E "^(Name|Version)"
-          pytest tests/test_lock.py -vv -p no:cacheprovider --snapshot-details 2>&1 | tail -60 || true
+          pytest tests/test_lock.py -p tests.conftest_debug -s -q -p no:cacheprovider 2>&1 | grep -E 'DEBUGSNAP|passed|failed' | head -20 || true
           python - <<'PY'
           from pytest_homeassistant_custom_component.syrupy import HomeAssistantSnapshotExtension as E
           col = E().read_snapshot_collection("tests/snapshots/test_lock.ambr")
