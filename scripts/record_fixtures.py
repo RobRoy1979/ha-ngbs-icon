@@ -1,8 +1,8 @@
 """Record responses of a real iCON controller and turn them into anonymised test fixtures.
 
 Reads ICON_HOST (and optionally ICON_SYSID) from .env, sends the protocol's main
-requests, stores the untouched responses in tests/fixtures/raw/ (git-ignored) and
-writes anonymised copies to tests/fixtures/:
+requests, stores the untouched responses in lib/pyngbsicon/tests/fixtures/raw/ (git-ignored)
+and writes anonymised copies to lib/pyngbsicon/tests/fixtures/:
 
     sysid.json        response to {"RELOAD": 6}                 (SYSID discovery)
     state_poll.json   response to {"SYSID": s}                  (regular poll)
@@ -32,7 +32,7 @@ from devenv import REPO_ROOT, load_env, require
 
 PORT = 7992
 TIMEOUT = 5.0
-FIXTURES = REPO_ROOT / "tests" / "fixtures"
+FIXTURES = REPO_ROOT / "lib" / "pyngbsicon" / "tests" / "fixtures"
 RAW = FIXTURES / "raw"
 
 ANON_SYSID = "123456789012"
@@ -178,7 +178,7 @@ def main() -> int:
                 f"{name}: anonymisation left identifiers behind: {findings}"
             )
         (FIXTURES / f"{name}.json").write_text(clean, encoding="utf-8")
-        print(f"tests/fixtures/{name}.json  ({len(clean)} bytes)")
+        print(f"{(FIXTURES / name).relative_to(REPO_ROOT)}.json  ({len(clean)} bytes)")
     return 0
 
 

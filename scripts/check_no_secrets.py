@@ -32,7 +32,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 from devenv import REPO_ROOT, load_env
 
 ANONYMOUS_SYSID = "123456789012"
-EXCLUDED_PREFIXES = ("docs/reference/", "tests/fixtures/raw/", ".git/")
+EXCLUDED_PREFIXES = ("docs/reference/", "lib/pyngbsicon/tests/fixtures/raw/", ".git/")
 EXCLUDED_FILES = {".env"}
 ALLOW_MARKER = "allow-secret"
 

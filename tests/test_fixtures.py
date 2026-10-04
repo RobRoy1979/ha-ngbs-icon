@@ -9,7 +9,7 @@ from types import ModuleType
 
 import pytest
 
-FIXTURES = Path(__file__).parent / "fixtures"
+FIXTURES = Path(__file__).parents[1] / "lib" / "pyngbsicon" / "tests" / "fixtures"
 ANON_SYSID = "123456789012"
 
 

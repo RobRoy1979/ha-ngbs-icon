@@ -67,7 +67,9 @@ jobs:
           python-version: ${{ matrix.python }}
       - run: pip install pytest pytest-asyncio pytest-timeout ./lib/pyngbsicon
       # Run outside the repository configuration so the Home Assistant plugin is not required.
-      - run: pytest lib/pyngbsicon/tests -c /dev/null -q --asyncio-mode=auto --import-mode=importlib -p no:cacheprovider
+      - env:
+          PYTHONPATH: lib/pyngbsicon/tests
+        run: pytest lib/pyngbsicon/tests -c /dev/null -q --asyncio-mode=auto --import-mode=importlib -p no:cacheprovider
 
   hassfest:
     name: hassfest

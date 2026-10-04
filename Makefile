@@ -42,7 +42,7 @@ libtest: ## pytest for the pyngbsicon library only
 check: lint type test ## Everything CI runs (mandatory before a commit)
 
 .PHONY: fixtures
-fixtures: ## Capture and anonymise controller responses into tests/fixtures (needs .env)
+fixtures: ## Capture and anonymise controller responses into lib/pyngbsicon/tests/fixtures (needs .env)
 	python3 scripts/record_fixtures.py
 
 .PHONY: ha-up

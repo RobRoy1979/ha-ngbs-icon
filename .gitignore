@@ -21,7 +21,7 @@ htmlcov/
 config/
 
 # Unredacted controller captures - they contain the real SYSID, MAC and IP addresses
-tests/fixtures/raw/
+lib/pyngbsicon/tests/fixtures/raw/
 
 # Local backups made by scripts/deploy_ha.py before replacing the integration
 .backups/

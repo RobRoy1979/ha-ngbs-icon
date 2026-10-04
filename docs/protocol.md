@@ -8,7 +8,7 @@ community work (credited at the end) and on measurements against a real controll
 (iCON-1, firmware 1079). Fields marked *unconfirmed* have not been verified yet.
 
 Example values below come from the anonymised fixtures in
-[`tests/fixtures`](../tests/fixtures).
+[`lib/pyngbsicon/tests/fixtures`](../lib/pyngbsicon/tests/fixtures).
 
 ## 1. The system
 
@@ -69,8 +69,11 @@ Home Assistant matches these in its DHCP discovery (`manifest.json` → `dhcp`).
   other. Clients should serialise their own requests.
 * Typical timing (firmware 1079, one controller): full state with configuration
   ~3.9 kB in 26–30 ms, state without configuration ~2.4 kB in ~40 ms, a write and its
-  answer ~60 ms.
-* An unknown or wrong SYSID is answered with `{"ERR":1}`.
+  answer ~60–70 ms. Reading the configuration costs nothing extra, and it is the only
+  source of relay states, the mixing valve position and supply voltages.
+* An unknown or wrong SYSID is answered with `{"ERR":1}` and nothing else. A normal
+  state answer can contain `"ERR": 1` too — there it is the collective fault flag — so
+  only an answer without `SYSID` and `DP` is the authentication error.
 
 ### 3.2 Requests
 
@@ -79,18 +82,23 @@ Home Assistant matches these in its DHCP discovery (`manifest.json` → `dhcp`).
 | `{"RELOAD": 6}` | `{"SYSID": "123456789012", "DOWNLOAD": 0, "ICON1": {"VER:": "606231543", "FIRMWARE": 1079}}` | **SYSID discovery**, works without a SYSID on firmware ≥ 1079 (January 2023). Older firmware answers `{"ERR":1}` and the SYSID has to be entered by the user. Note the key `"VER:"` with a trailing colon. Slave controllers are expected to appear as `ICON2`… (*unconfirmed*). |
 | `{"SYSID": s}` | full state without configuration | regular polling |
 | `{"SYSID": s, "RELOAD": ""}` (or `"RELOAD": 3`) | full state **plus** `KEY`, `CFG`, `EVENTLOG` | names, relay matrix, H/C master, Modbus settings |
-| `{"SYSID": s, "DP": {"1.3": {"XAH": 21.5}}}` | full state without configuration, after the change | write thermostat fields; several thermostats and fields may be combined in one request |
-| `{"SYSID": s, "CE": 1}` | state | system-wide ECO on/off |
+| `{"SYSID": s, "DP": {"1.3": {"XAH": 21.5}}}` | state without configuration | write thermostat fields; several thermostats and fields may be combined in one request. See 3.5 for when the value really takes effect. |
+| `{"SYSID": s, "CE": 1}` | state | system-wide ECO on/off (*unconfirmed*: not yet tested whether the controller applies it or, like the default setpoints, ignores it) |
 | `{"SYSID": s, "HC": 1}` | state | system-wide heating (0) / cooling (1). The answer already shows the new mode, but the controller switches its relays with a delay (3–10 minutes by default). Without effect when switching is done by an external contact. |
 | `{"SYSID": s, "SW": 1}` | state | switched output ("TAP"), if a relay is configured for it (*unconfirmed*) |
 | `{"SYSID": s, "RELOAD": 8}` | — | restart the controller software |
 | `{"SYSID": s, "RELOAD": 7}` | — | start a firmware update from the network (not used) |
 
-Writable thermostat fields: `XAH`, `XAC`, `ECOH`, `ECOC` (the four setpoints, °C, 0.5
-steps), `SP` (the currently active setpoint — the controller decides which of the four),
-`CE`, `HC` (only on thermostats that may switch), `PL` (keypad lock), `LIM`, `DXH`,
-`DXC`. The integration writes the explicit setpoint field rather than `SP`, so the
-result does not depend on a mode change racing the write.
+Writable thermostat fields (verified): `XAH`, `XAC`, `ECOH`, `ECOC` (the four
+setpoints), `CE` (ECO, per thermostat — other thermostats are not affected) and `PL`
+(keypad lock); `LIM`, `DXH`, `DXC` are accepted as well. `HC` on the H/C master
+thermostat is expected to work like the top-level `HC` (*unconfirmed*). Writing `SP`
+changed nothing in our test; write the explicit setpoint field instead.
+
+**Values must be JSON numbers.** A string such as `"21.5"` is stored as `0`.
+
+The top-level default setpoints (`XAH`, `XAC`, `ECOH`, `ECOC` without `DP`) are **not
+writable**: the controller answers normally but ignores them.
 
 ### 3.3 State fields
 
@@ -111,7 +119,7 @@ result does not depend on a mode change racing the write.
 | `ERR` | collective fault input / system error (0/1) |
 | `OVERHEAT` | overheat protection active (0/1) |
 | `WFROST` | frost danger (0/1) |
-| `XAH`, `XAC`, `ECOH`, `ECOC` | system default setpoints, inherited by new thermostats (not the active setpoints) |
+| `XAH`, `XAC`, `ECOH`, `ECOC` | system default setpoints, inherited by new thermostats (not the active setpoints; read-only); the centre of each thermostat's allowed range (± `LIM`) |
 | `SIG` | signal bits, same as the Modbus `Signal` register (see appendix) |
 | `SW` | switched output state |
 | `EMAIL` | notification address |
@@ -136,12 +144,13 @@ result does not depend on a mode change racing the write.
 | `FROST` | frost protection active |
 | `PL` | keypad (child) lock |
 | `TPR` | time program active |
-| `LIM` | ± adjustment limit on the thermostat, °C |
-| `DXH`, `DXC` | floor heating / cooling offset, °C |
-| `DI` | digital input (window contact, if wired) |
-| `IHC` | individual heating/cooling switching: 0 heat, 1 cool, 2 follow the system (observed: 2) |
-| `CEF` | ECO follows the master |
-| `CEC`, `WP`, `MV` | *unconfirmed* (observed: 1) |
+| `LIM` | allowed range around the default setpoint, ± °C (web interface: "Manual +/-") |
+| `DXH`, `DXC` | offset of the sequenced second output ("Reg-B") in heating / cooling, °C — e.g. ceiling panels that join the floor heating only when the room is this much below the setpoint |
+| `DI` | the thermostat's digital input (e.g. a window contact, if wired) |
+| `IHC` | individual heating/cooling switching (observed: 2); probably 0 heat, 1 cool, 2 follow the system, like the Modbus `THHC` registers (*unconfirmed*) |
+| `CEF` | follows the ECO master when it switches to ECO (web interface: "Follow") |
+| `CEC` | follows the ECO master when it switches back to comfort (web interface: "Comfort") |
+| `WP`, `MV` | *unconfirmed* (observed: 1; not shown by the web interface — possibly pump and mixing valve participation) |
 
 #### Configuration (`CFG`, only with `RELOAD`)
 
@@ -153,12 +162,19 @@ result does not depend on a mode change racing the write.
 | `ICONS` | number of controllers in the system |
 | `PUMP` | relay used for the pump, e.g. `R1.8` |
 | `OVSTOP`, `FROST`, `THH`, `HCT`, `TBOILER` | overheat limit, frost limit, thermostat hysteresis, H/C switching parameters |
-| `HCMASTER` | H/C master: `H1.1` = thermostat 1.1; other forms = external switching |
-| `CEMASTER` | ECO master, e.g. `E1.1` |
+| `HCMASTER` | what switches heating/cooling, as a signal reference (below): `H1.1` = the H/C button of thermostat 1.1; anything else (e.g. `I1.4`, a controller input) means the system is switched externally |
+| `CEMASTER` | what switches the system ECO state, e.g. `E1.1` (ECO button of thermostat 1.1) |
 | `BACNET`, `MBTCP` | BACnet and Modbus-TCP settings (`EN`, `PORT`, `TOUT`) |
 | `ICON<n>` | per controller: `WATER` (flow temperature curve), `COND` (condensation control), `DHU` (dehumidifier), `WEATHER`, `RELAY`, `STATUS` |
-| `ICON<n>.RELAY.R0…R9` | relay matrix: `FUNC` (name, e.g. `R1.HEAT`, `R1.COOL`, `R1.3`, `S1.8`), `Ton`/`Toff`, `NEG`, `HEAT`/`COOL` participation, `OR` (thermostats `A1.x` or inputs `I1.x` that switch it on) |
+| `ICON<n>.RELAY.R0…R9` | relay matrix: `FUNC` (the relay's name, default `R<c>.HEAT`, `R<c>.COOL`, `R<c>.<n>`; installers may rename it), `Ton`/`Toff` (delays, s), `NEG` (inverted), `HEAT`/`COOL` (takes part in heating / cooling), `OR` (signal references that switch it on) |
 | `ICON<n>.STATUS` | `WTEMP`, `ETEMP`, `HC`, `CE`, `ON` (digital inputs), `POWER` (supply V), `THPWR` (thermostat bus V), `AO` (mixing valve %), `R0…R9` (**physical** relay states) |
+
+**Signal references** have the form `<function><controller>.<index>`: `A` thermostat
+demand (A loop), `B` thermostat demand (B loop), `C` condensation, `D` drying, `E`
+thermostat ECO button, `H` thermostat heating/cooling button, `I` controller input,
+`N` thermostat connected, `R` relay, `S` signal, `W` thermostat digital input. For the
+thermostat functions the index is the thermostat address, so `A1.3` is the demand of
+thermostat 1.3. `CFG.PUMP` names the pump relay as `R<controller>.<relay>`.
 
 In the factory configuration `R0` is the heating changeover relay (`R<c>.HEAT`), `R9`
 the cooling changeover relay (`R<c>.COOL`) and `R1…R8` the valve outputs, relay *n*
@@ -177,7 +193,36 @@ relay matrix, so always read the role from `FUNC`.
 * After a heating/cooling switch the relays change minutes later; valve outputs
   (`OUT`) follow setpoint changes only when the room temperature crosses the
   hysteresis.
-* Changed settings are written to EEPROM 3–5 minutes after the last change.
+* Changed settings are written to EEPROM 3–5 minutes after the last change. A
+  configuration change made in the meantime (which reloads the configuration) can
+  bring back the previously stored values.
+
+### 3.5 Writes take effect through the thermostat
+
+Measured on firmware 1079: the controller applies a write at once — its answer and the
+next read show the new value — but then the thermostat reports its *previous* state
+once (after ~0.5–1.2 s), and only after that (by ~1.7 s) the value it actually adopted.
+The thermostat has the final word:
+
+* it rounds to 0.5 °C (21.3 → 21.5);
+* it clamps to its allowed range, the default setpoint ± `LIM` (observed 10–30 °C for
+  heating with default 20 °C and `LIM` 10): 35 → 30, 40 → 30, 6 → 10;
+* it discards very low values (4 and 5 °C), keeping the previous setpoint.
+
+A client should therefore confirm a write by reading the state until it is stable for
+a moment after ~2 seconds, compare it with the request (accepted, adjusted or
+rejected), and not send a second write to the same thermostat before the first one has
+settled — the thermostat's "previous state" report can overwrite it. `pyngbsicon`
+holds its request lock for the whole confirmation, so writes never overlap.
+
+### 3.6 The web interface
+
+The web interface on port 80 is not used, and must be treated with care: some of its
+pages change the configuration **on a plain GET request**. Opening the "Add iCON" tab
+(`index.php?tab=add-icon@1`) adds a slave controller to the configuration (`CFG.ICONS`
+2, an `ICON2` block and thermostats `2.1`–`2.8`); "Remove iCON"
+(`index.php?tab=remove-icon@<n>`, from the tab of controller *n*) removes it again.
+Never crawl it.
 
 ## 4. Discovery
 
