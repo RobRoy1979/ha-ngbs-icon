@@ -1,19 +1,16 @@
 name: Feature request
-description: Suggest an improvement
-labels: [enhancement]
+description: Suggest an improvement or support for more hardware.
+labels: ["enhancement"]
 body:
   - type: textarea
-    id: problem
+    id: need
     attributes:
-      label: What would you like to do that you cannot do today?
+      label: What would you like to do?
+      description: Describe the situation and what is missing, rather than a solution.
     validations:
       required: true
   - type: textarea
-    id: proposal
+    id: system
     attributes:
-      label: How do you imagine it working?
-  - type: textarea
-    id: controller
-    attributes:
-      label: Does your controller expose the needed data?
-      description: If you know the protocol field (see docs/protocol.md), mention it.
+      label: Your system
+      description: Controller type and firmware, number of controllers and thermostats, how heating/cooling is switched.

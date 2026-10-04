@@ -1,22 +1,28 @@
 name: Bug report
-description: Something does not work as documented
-labels: [bug]
+description: Something does not work as described.
+labels: ["bug"]
 body:
   - type: markdown
     attributes:
       value: |
-        Thanks for the report. Please attach the **diagnostics download** of the integration
-        (Settings → Devices & services → NGBS iCON → ⋮ → Download diagnostics). It is already
-        redacted: your SYSID, MAC and IP addresses are removed.
+        Thanks for reporting! Please **do not paste your SYSID, MAC address or public IP** —
+        the diagnostics download below already hides them.
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened, and what did you expect?
+    validations:
+      required: true
   - type: input
     id: version
     attributes:
       label: Integration version
+      description: Settings → Devices & services → NGBS iCON → the version shown on the card.
       placeholder: "1.0.0"
     validations:
       required: true
   - type: input
-    id: ha
+    id: ha_version
     attributes:
       label: Home Assistant version
       placeholder: "2026.9.3"
@@ -25,25 +31,21 @@ body:
   - type: input
     id: firmware
     attributes:
-      label: Controller firmware (shown on the device page as "Firmware")
-      placeholder: "1079"
-  - type: dropdown
-    id: topology
-    attributes:
-      label: System
-      options:
-        - One controller
-        - Master + slave controller(s)
-        - Several separate systems
+      label: Controller firmware and hardware
+      description: The firmware is shown on the controller's device page (for example 1079); iCON-1 or iCON-2.
+      placeholder: "1079, iCON-1"
   - type: textarea
-    id: what
+    id: diagnostics
     attributes:
-      label: What happened, and what did you expect?
-    validations:
-      required: true
+      label: Diagnostics
+      description: |
+        Device page of the controller → ⋮ → Download diagnostics, then drag the file here.
+        Secrets and network details are removed automatically.
   - type: textarea
     id: logs
     attributes:
-      label: Relevant log lines
-      description: "Enable debug logging first: Settings → Devices & services → NGBS iCON → ⋮ → Enable debug logging."
+      label: Debug log
+      description: |
+        Enable debug logging (integration card → ⋮ → Enable debug logging), reproduce the
+        problem, disable it again and attach the downloaded log.
       render: text

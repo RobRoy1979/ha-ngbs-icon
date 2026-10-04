@@ -26,6 +26,11 @@ jobs:
         run: |
           version="$(python -c 'import json; print(json.load(open("custom_components/ngbs_icon/manifest.json"))["version"])')"
           [ "v${version}" = "${GITHUB_REF_NAME}" ] || { echo "manifest.json has ${version}, tag is ${GITHUB_REF_NAME}"; exit 1; }
+      - name: Check that the pinned pyngbsicon is on PyPI
+        run: |
+          pin="$(python -c 'import json; r=[x for x in json.load(open("custom_components/ngbs_icon/manifest.json"))["requirements"] if x.startswith("pyngbsicon==")]; print(r[0].split("==")[1] if r else "")')"
+          [ -n "${pin}" ] || { echo "manifest.json does not pin pyngbsicon; publish the library first (docs/RELEASING.md)"; exit 1; }
+          curl -fsS "https://pypi.org/pypi/pyngbsicon/${pin}/json" > /dev/null || { echo "pyngbsicon ${pin} is not on PyPI yet"; exit 1; }
       - name: Build ngbs_icon.zip
         run: python scripts/package.py
       - name: Release notes from CHANGELOG.md

@@ -27,7 +27,7 @@
       'unique_id': '**REDACTED**',
       'version': 2,
     }),
-    'library_version': '0.1.0.dev0',
+    'library_version': '0.1.0',
     'state': dict({
       'CE': 1,
       'CFG': dict({

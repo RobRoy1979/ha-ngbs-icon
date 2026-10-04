@@ -1,5 +1,5 @@
 blank_issues_enabled: false
 contact_links:
-  - name: Home Assistant community thread
-    url: https://community.home-assistant.io/t/ngbs-icon-integration-to-homeassistant/966557
-    about: General discussion and help from other users
+  - name: Security issue
+    url: https://github.com/robroy1979/ha-ngbs-icon/blob/main/docs/SECURITY.md
+    about: Please report security problems privately, as described here.

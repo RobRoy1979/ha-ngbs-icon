@@ -5,11 +5,14 @@ All notable changes to this project are documented here. The format follows
 [Semantic Versioning](https://semver.org/). The protocol library `pyngbsicon` is
 versioned separately (tags `lib-v*`).
 
-## [Unreleased]
+## [1.0.0] - 2026-10-04
+
+First release.
 
 ### Added
-- Project scaffolding: tooling (ruff, mypy, pytest with the Home Assistant test
-  harness), Docker-based development environment, CI and release workflows.
+- Documentation: installation with and without HACS, setup, entities, actions,
+  automation examples, known limitations, troubleshooting; issue templates and the
+  release procedure (`docs/RELEASING.md`).
 - Protocol notes for the NGBS iCON local JSON service protocol (`docs/protocol.md`).
 - Anonymised controller responses as test fixtures.
 - Integration icon and logo.
@@ -38,7 +41,7 @@ versioned separately (tags `lib-v*`).
 - Device and relay names follow rooms renamed in the controller; slave controllers
   show their firmware version.
 
-### pyngbsicon (protocol library, unreleased)
+### pyngbsicon 0.1.0 (protocol library)
 - `IconClient`: complete state with cached configuration, SYSID discovery, confirmed
   writes (setpoints, ECO, child lock, heating/cooling mode, switched output), restart,
   raw requests; requests are serialised and retried once on connection failures.

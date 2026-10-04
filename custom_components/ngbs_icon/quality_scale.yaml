@@ -11,21 +11,13 @@ rules:
   dependency-transparency:
     status: todo
     comment: pyngbsicon is open source and bundled for now; it is published to PyPI from CI with the first release.
-  docs-actions:
-    status: todo
-    comment: The README is completed for the first release.
+  docs-actions: done
   docs-conditions:
     status: exempt
     comment: The integration provides no conditions.
-  docs-high-level-description:
-    status: todo
-    comment: The README is completed for the first release.
-  docs-installation-instructions:
-    status: todo
-    comment: The README is completed for the first release.
-  docs-removal-instructions:
-    status: todo
-    comment: The README is completed for the first release.
+  docs-high-level-description: done
+  docs-installation-instructions: done
+  docs-removal-instructions: done
   docs-triggers:
     status: exempt
     comment: The integration provides no triggers.
@@ -42,12 +34,8 @@ rules:
   # Silver
   action-exceptions: done
   config-entry-unloading: done
-  docs-configuration-parameters:
-    status: todo
-    comment: The README is completed for the first release.
-  docs-installation-parameters:
-    status: todo
-    comment: The README is completed for the first release.
+  docs-configuration-parameters: done
+  docs-installation-parameters: done
   entity-unavailable: done
   integration-owner: done
   log-when-unavailable:
@@ -62,27 +50,13 @@ rules:
   diagnostics: done
   discovery: done
   discovery-update-info: done
-  docs-data-update:
-    status: todo
-    comment: The README is completed for the first release.
-  docs-examples:
-    status: todo
-    comment: The README is completed for the first release.
-  docs-known-limitations:
-    status: todo
-    comment: The README is completed for the first release.
-  docs-supported-devices:
-    status: todo
-    comment: The README is completed for the first release.
-  docs-supported-functions:
-    status: todo
-    comment: The README is completed for the first release.
-  docs-troubleshooting:
-    status: todo
-    comment: The README is completed for the first release.
-  docs-use-cases:
-    status: todo
-    comment: The README is completed for the first release.
+  docs-data-update: done
+  docs-examples: done
+  docs-known-limitations: done
+  docs-supported-devices: done
+  docs-supported-functions: done
+  docs-troubleshooting: done
+  docs-use-cases: done
   dynamic-devices: done
   entity-category: done
   entity-device-class: done

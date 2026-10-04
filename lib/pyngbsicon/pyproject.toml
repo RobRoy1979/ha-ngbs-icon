@@ -13,7 +13,7 @@ license-files = ["LICENSE"]
 authors = [{ name = "RobRoy1979" }]
 keywords = ["ngbs", "icon", "thermostat", "heating", "cooling", "home-automation", "home-assistant"]
 classifiers = [
-  "Development Status :: 3 - Alpha",
+  "Development Status :: 4 - Beta",
   "Intended Audience :: Developers",
   "Operating System :: OS Independent",
   "Programming Language :: Python :: 3",
@@ -39,6 +39,9 @@ path = "src/pyngbsicon/__init__.py"
 
 [tool.hatch.build.targets.sdist]
 include = ["src/pyngbsicon", "tests", "README.md", "LICENSE"]
+# Unredacted controller captures (real SYSID, MAC, addresses) may exist locally; the
+# repository's .gitignore is not seen from this directory, so exclude them here too.
+exclude = ["tests/fixtures/raw", "**/__pycache__"]
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/pyngbsicon"]
