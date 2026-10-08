@@ -25,7 +25,7 @@ from homeassistant.helpers.selector import (
     TextSelector,
 )
 from homeassistant.helpers.service_info.dhcp import DhcpServiceInfo
-import voluptuous as vol
+import probatio
 
 from ._lib import pyngbsicon
 from .const import (
@@ -120,9 +120,9 @@ class NgbsIconConfigFlow(ConfigFlow, domain=DOMAIN):
         options.append(SelectOptionDict(value=_MANUAL, label=_MANUAL))
         return self.async_show_form(
             step_id="select",
-            data_schema=vol.Schema(
+            data_schema=probatio.Schema(
                 {
-                    vol.Required(CONF_HOST): SelectSelector(
+                    probatio.Required(CONF_HOST): SelectSelector(
                         SelectSelectorConfig(
                             options=options,
                             mode=SelectSelectorMode.LIST,
@@ -144,9 +144,9 @@ class NgbsIconConfigFlow(ConfigFlow, domain=DOMAIN):
             if self._state is not None and user_input is not None:
                 return await self._async_create_entry(self._state)
         schema = (
-            vol.Schema({vol.Required(CONF_SYSID): TextSelector()})
+            probatio.Schema({probatio.Required(CONF_SYSID): TextSelector()})
             if self._sysid is None
-            else vol.Schema({})
+            else probatio.Schema({})
         )
         state = self._state
         return self.async_show_form(
@@ -176,10 +176,10 @@ class NgbsIconConfigFlow(ConfigFlow, domain=DOMAIN):
         return self.async_show_form(
             step_id="manual",
             data_schema=self.add_suggested_values_to_schema(
-                vol.Schema(
+                probatio.Schema(
                     {
-                        vol.Required(CONF_HOST): TextSelector(),
-                        vol.Optional(CONF_SYSID): TextSelector(),
+                        probatio.Required(CONF_HOST): TextSelector(),
+                        probatio.Optional(CONF_SYSID): TextSelector(),
                     }
                 ),
                 user_input,
@@ -237,7 +237,7 @@ class NgbsIconConfigFlow(ConfigFlow, domain=DOMAIN):
         return self.async_show_form(
             step_id="reconfigure",
             data_schema=self.add_suggested_values_to_schema(
-                vol.Schema({vol.Required(CONF_HOST): TextSelector()}),
+                probatio.Schema({probatio.Required(CONF_HOST): TextSelector()}),
                 user_input or {CONF_HOST: entry.data.get(CONF_HOST, "")},
             ),
             errors=errors,
@@ -261,7 +261,9 @@ class NgbsIconConfigFlow(ConfigFlow, domain=DOMAIN):
                 return await self._async_adopt(entry, state, {})
         return self.async_show_form(
             step_id="reauth_confirm",
-            data_schema=vol.Schema({vol.Required(CONF_SYSID): TextSelector()}),
+            data_schema=probatio.Schema(
+                {probatio.Required(CONF_SYSID): TextSelector()}
+            ),
             errors=errors,
             description_placeholders={"host": entry.data.get(CONF_HOST, "")},
         )
@@ -345,9 +347,9 @@ class NgbsIconOptionsFlow(OptionsFlowWithReload):
         return self.async_show_form(
             step_id="init",
             data_schema=self.add_suggested_values_to_schema(
-                vol.Schema(
+                probatio.Schema(
                     {
-                        vol.Required(CONF_SCAN_INTERVAL): NumberSelector(
+                        probatio.Required(CONF_SCAN_INTERVAL): NumberSelector(
                             NumberSelectorConfig(
                                 min=MIN_SCAN_INTERVAL,
                                 max=MAX_SCAN_INTERVAL,

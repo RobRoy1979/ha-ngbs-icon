@@ -5,6 +5,16 @@ All notable changes to this project are documented here. The format follows
 [Semantic Versioning](https://semver.org/). The protocol library `pyngbsicon` is
 versioned separately (tags `lib-v*`).
 
+## [Unreleased]
+
+### Changed
+- Schemas are built with `probatio`, the validation engine Home Assistant ships since
+  2026.9 (the `voluptuous` import kept working through the compatibility alias, but
+  Home Assistant 2026.10 types its APIs with `probatio`). Behaviour is unchanged.
+- The development toolchain and the development Home Assistant run on Home Assistant
+  2026.10.0; the integration is verified on 2026.10.0. Home Assistant 2026.9 remains
+  supported.
+
 ## [1.0.0] - 2026-10-04
 
 First release.

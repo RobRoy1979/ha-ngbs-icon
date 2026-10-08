@@ -1,7 +1,7 @@
 # Test and lint toolchain. pytest-homeassistant-custom-component pins the Home Assistant
-# core version it was built against (0.13.366 == Home Assistant 2026.9.3) together with
+# core version it was built against (0.13.371 == Home Assistant 2026.10.0) together with
 # pytest, pytest-asyncio, syrupy, freezegun, pytest-timeout and friends.
-pytest-homeassistant-custom-component==0.13.366
+pytest-homeassistant-custom-component==0.13.371
 ruff==0.16.10
 mypy==2.4.0
 pre-commit==4.6.2

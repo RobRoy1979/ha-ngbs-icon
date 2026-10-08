@@ -23,7 +23,7 @@ services:
     user: "${UID:-1000}:${GID:-1000}"
 
   ha:
-    image: ghcr.io/home-assistant/home-assistant:2026.9.3
+    image: ghcr.io/home-assistant/home-assistant:2026.10.0
     container_name: ngbs-icon-dev-ha
     network_mode: host
     privileged: false

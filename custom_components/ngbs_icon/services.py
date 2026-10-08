@@ -9,7 +9,7 @@ from homeassistant.core import HomeAssistant, ServiceCall, callback
 from homeassistant.exceptions import ServiceValidationError
 from homeassistant.helpers import config_validation as cv, service
 from homeassistant.helpers.typing import VolDictType
-import voluptuous as vol
+import probatio
 
 from ._lib import pyngbsicon
 from .climate import SETPOINT_FIELDS
@@ -29,9 +29,9 @@ _MODES = {
     "cooling": pyngbsicon.HeatCool.COOLING,
 }
 
-_ENTRY_SCHEMA: VolDictType = {vol.Optional(ATTR_CONFIG_ENTRY_ID): cv.string}
+_ENTRY_SCHEMA: VolDictType = {probatio.Optional(ATTR_CONFIG_ENTRY_ID): cv.string}
 _SETPOINTS_SCHEMA: VolDictType = {
-    vol.Optional(name): vol.Coerce(float) for name in SETPOINT_FIELDS
+    probatio.Optional(name): probatio.Coerce(float) for name in SETPOINT_FIELDS
 }
 
 
@@ -50,13 +50,15 @@ def async_setup_services(hass: HomeAssistant) -> None:
         DOMAIN,
         SERVICE_SET_SYSTEM_MODE,
         _async_set_system_mode,
-        schema=vol.Schema({**_ENTRY_SCHEMA, vol.Required(ATTR_MODE): vol.In(_MODES)}),
+        schema=probatio.Schema(
+            {**_ENTRY_SCHEMA, probatio.Required(ATTR_MODE): probatio.In(_MODES)}
+        ),
     )
     hass.services.async_register(
         DOMAIN,
         SERVICE_RESTART_CONTROLLER,
         _async_restart_controller,
-        schema=vol.Schema(_ENTRY_SCHEMA),
+        schema=probatio.Schema(_ENTRY_SCHEMA),
     )
 
 
