@@ -5,7 +5,7 @@ All notable changes to this project are documented here. The format follows
 [Semantic Versioning](https://semver.org/). The protocol library `pyngbsicon` is
 versioned separately (tags `lib-v*`).
 
-## [Unreleased]
+## [1.0.1] - 2026-10-08
 
 ### Changed
 - Schemas are built with `probatio`, the validation engine Home Assistant ships since
