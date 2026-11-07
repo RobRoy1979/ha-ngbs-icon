@@ -7,12 +7,13 @@ from typing import Any
 
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant, callback
-from homeassistant.helpers import issue_registry as ir
+from homeassistant.helpers import device_registry as dr, issue_registry as ir
 from homeassistant.util import dt as dt_util
 
 from ._lib import pyngbsicon
 from .const import DOMAIN
 from .coordinator import IconConfigEntry
+from .entity import thermostat_identifier
 
 # The firmware that reveals the SYSID without it (needed for automatic discovery).
 SYSID_DISCOVERY_FIRMWARE = 1079
@@ -51,12 +52,18 @@ def async_update_issues(
     if system.hc_master_thermostat is not None:
         ir.async_delete_issue(hass, DOMAIN, _issue_id(entry, "hc_switch_external"))
 
+    device_registry = dr.async_get(hass)
     now = dt_util.utcnow()
     offline: set[str] = set()
     for thermostat_id, since in coordinator.offline_since.items():
-        if now - since < THERMOSTAT_OFFLINE_AFTER:
+        device = device_registry.async_get_device_by_identifier(
+            thermostat_identifier(system.sysid, thermostat_id), entry.entry_id
+        )
+        if device is not None and device.disabled:
             continue
         offline.add(thermostat_id)
+        if now - since < THERMOSTAT_OFFLINE_AFTER:
+            continue
         ir.async_create_issue(
             hass,
             DOMAIN,

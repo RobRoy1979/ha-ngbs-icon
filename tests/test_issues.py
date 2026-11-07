@@ -7,7 +7,7 @@ from unittest.mock import MagicMock
 
 from freezegun.api import FrozenDateTimeFactory
 from homeassistant.core import HomeAssistant
-from homeassistant.helpers import issue_registry as ir
+from homeassistant.helpers import device_registry as dr, issue_registry as ir
 from pytest_homeassistant_custom_component.common import (
     MockConfigEntry,
     async_fire_time_changed,
@@ -15,7 +15,7 @@ from pytest_homeassistant_custom_component.common import (
 
 from custom_components.ngbs_icon.const import DOMAIN
 
-from .conftest import make_state, setup_integration
+from .conftest import SYSID, make_state, setup_integration
 
 
 async def _poll(
@@ -79,6 +79,63 @@ async def test_thermostat_offline(
 
     mock_client.return_value.get_state.return_value = make_state()
     await _poll(hass, freezer, 1)
+    assert not issue_registry.async_get_issue(DOMAIN, issue_id)
+
+
+async def test_ignored_thermostat_offline_issue_survives_a_restart(
+    hass: HomeAssistant,
+    config_entry: MockConfigEntry,
+    mock_client: MagicMock,
+    issue_registry: ir.IssueRegistry,
+    freezer: FrozenDateTimeFactory,
+) -> None:
+    mock_client.return_value.get_state.return_value = make_state(
+        dp={"1.2": {"LIVE": 0}}
+    )
+    await setup_integration(hass, config_entry)
+    issue_id = f"thermostat_offline_{config_entry.entry_id}_1.2"
+    await _poll(hass, freezer, 61)
+    ir.async_ignore_issue(hass, DOMAIN, issue_id, True)
+
+    assert await hass.config_entries.async_reload(config_entry.entry_id)
+    await hass.async_block_till_done()
+    issue = issue_registry.async_get_issue(DOMAIN, issue_id)
+    assert issue is not None
+    assert issue.dismissed_version is not None
+
+    await _poll(hass, freezer, 61)
+    issue = issue_registry.async_get_issue(DOMAIN, issue_id)
+    assert issue is not None
+    assert issue.dismissed_version is not None
+
+
+async def test_no_thermostat_offline_issue_for_a_disabled_device(
+    hass: HomeAssistant,
+    config_entry: MockConfigEntry,
+    mock_client: MagicMock,
+    issue_registry: ir.IssueRegistry,
+    device_registry: dr.DeviceRegistry,
+    freezer: FrozenDateTimeFactory,
+) -> None:
+    mock_client.return_value.get_state.return_value = make_state(
+        dp={"1.2": {"LIVE": 0}}
+    )
+    await setup_integration(hass, config_entry)
+    issue_id = f"thermostat_offline_{config_entry.entry_id}_1.2"
+    await _poll(hass, freezer, 61)
+    assert issue_registry.async_get_issue(DOMAIN, issue_id)
+
+    device = device_registry.async_get_device_by_identifier(
+        (DOMAIN, f"{SYSID}-1.2"), config_entry.entry_id
+    )
+    assert device is not None
+    device_registry.async_update_device(
+        device.id, disabled_by=dr.DeviceEntryDisabler.USER
+    )
+    await _poll(hass, freezer, 1)
+    assert not issue_registry.async_get_issue(DOMAIN, issue_id)
+
+    await _poll(hass, freezer, 61)
     assert not issue_registry.async_get_issue(DOMAIN, issue_id)
 
 
